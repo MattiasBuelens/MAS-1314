@@ -36,6 +36,8 @@ public class Truck extends Vehicle implements CommunicationUser {
 		// Read messages
 		Queue<Message> messages = mailbox.getMessages();
 
+		// TODO Update beliefs
+
 		if (destination == null || destination.equals(getPosition())) {
 			destination = getRoadModel()
 					.getRandomPosition(getRandomGenerator());
