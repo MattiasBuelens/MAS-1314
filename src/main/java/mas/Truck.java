@@ -18,18 +18,15 @@ import rinde.sim.core.model.road.RoadModel;
 
 public class Truck extends Vehicle implements CommunicationUser {
 
-	private final RandomGenerator rng;
 	private final SimulationSettings settings;
 
 	private CommunicationAPI commAPI;
-	private Mailbox mailbox = new Mailbox();
+	private final Mailbox mailbox = new Mailbox();
 
 	@Nullable
 	private Point destination;
 
-	public Truck(RandomGenerator rng, Point startPosition,
-			SimulationSettings settings) {
-		this.rng = rng;
+	public Truck(Point startPosition, SimulationSettings settings) {
 		this.settings = settings;
 		setStartPosition(startPosition);
 	}
@@ -39,9 +36,9 @@ public class Truck extends Vehicle implements CommunicationUser {
 		// Read messages
 		Queue<Message> messages = mailbox.getMessages();
 
-		if (destination == null
-				|| destination.equals(getRoadModel().getPosition(this))) {
-			destination = getRoadModel().getRandomPosition(rng);
+		if (destination == null || destination.equals(getPosition())) {
+			destination = getRoadModel()
+					.getRandomPosition(getRandomGenerator());
 		}
 		getRoadModel().moveTo(this, destination, time);
 	}
@@ -50,7 +47,11 @@ public class Truck extends Vehicle implements CommunicationUser {
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		// TODO
 	}
-	
+
+	protected RandomGenerator getRandomGenerator() {
+		return settings.getRandomGenerator();
+	}
+
 	// Vehicle
 
 	@Override
@@ -59,7 +60,7 @@ public class Truck extends Vehicle implements CommunicationUser {
 	}
 
 	// CommunicationUser
-	
+
 	@Override
 	public void receive(Message message) {
 		mailbox.receive(message);
@@ -77,7 +78,8 @@ public class Truck extends Vehicle implements CommunicationUser {
 
 	@Override
 	public double getRadius() {
-		return settings.getCommunicationRadius(getRoadModel().getDistanceUnit());
+		return settings
+				.getCommunicationRadius(getRoadModel().getDistanceUnit());
 	}
 
 	@Override

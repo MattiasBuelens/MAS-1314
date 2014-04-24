@@ -8,7 +8,6 @@ import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -73,7 +72,7 @@ public class PDP {
 				SI.MILLI(SI.SECOND)));
 
 		final SimulationSettings settings = SimulationSettings.builder()
-				.setTruckSpeed(VEHICLE_SPEED)
+				.setRandomGenerator(rnd).setTruckSpeed(VEHICLE_SPEED)
 				.setCommunicationRadius(COMMUNICATION_RADIUS)
 				.setCommunicationReliability(COMMUNICATION_RELIABILITY).build();
 
@@ -96,8 +95,7 @@ public class PDP {
 			// automatically 'hooked up' with models that it's interested in. An
 			// object declares to be interested in an model by implementing an
 			// interface.
-			sim.register(new Truck(rnd, roadModel.getRandomPosition(rnd),
-					settings));
+			sim.register(new Truck(roadModel.getRandomPosition(rnd), settings));
 		}
 
 		final UiSchema uis = new UiSchema();

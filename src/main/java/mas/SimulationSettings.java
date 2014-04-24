@@ -1,5 +1,7 @@
 package mas;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import javax.measure.Measure;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
@@ -7,16 +9,27 @@ import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
 import javax.measure.unit.Unit;
 
+import org.apache.commons.math3.random.RandomGenerator;
+
 public class SimulationSettings {
 
+	private final RandomGenerator randomGenerator;
 	private final Measure<? extends Number, Velocity> truckSpeed;
 	private final Measure<? extends Number, Length> communicationRadius;
 	private final double communicationReliability;
 
 	private SimulationSettings(Builder builder) {
-		this.truckSpeed = builder.truckSpeed;
-		this.communicationRadius = builder.communicationRadius;
+		this.randomGenerator = checkNotNull(builder.randomGenerator);
+		this.truckSpeed = checkNotNull(builder.truckSpeed);
+		this.communicationRadius = checkNotNull(builder.communicationRadius);
 		this.communicationReliability = builder.communicationReliability;
+	}
+
+	/**
+	 * Get the random generator.
+	 */
+	public RandomGenerator getRandomGenerator() {
+		return randomGenerator;
 	}
 
 	/**
@@ -47,6 +60,7 @@ public class SimulationSettings {
 
 	public static class Builder {
 
+		private RandomGenerator randomGenerator;
 		private Measure<? extends Number, Velocity> truckSpeed = Measure
 				.valueOf(50d, NonSI.KILOMETRES_PER_HOUR);
 		private Measure<? extends Number, Length> communicationRadius = Measure
@@ -54,6 +68,11 @@ public class SimulationSettings {
 		private double communicationReliability = 1.0d;
 
 		protected Builder() {
+		}
+
+		public Builder setRandomGenerator(RandomGenerator randomGenerator) {
+			this.randomGenerator = randomGenerator;
+			return this;
 		}
 
 		public Builder setTruckSpeed(Measure<? extends Number, Velocity> speed) {

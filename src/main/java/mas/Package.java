@@ -15,7 +15,7 @@ public class Package extends Parcel implements CommunicationUser {
 	private final SimulationSettings settings;
 	
 	private CommunicationAPI commAPI;
-	private Mailbox mailbox = new Mailbox();
+	private final Mailbox mailbox = new Mailbox();
 	
 	public Package(Point pDestination, long pPickupDuration,
 			TimeWindow pickupTW, long pDeliveryDuration, TimeWindow deliveryTW,
