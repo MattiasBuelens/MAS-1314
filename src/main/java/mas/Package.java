@@ -10,9 +10,9 @@ import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
-import rinde.sim.core.model.pdp.Container;
 import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.pdp.Parcel;
+import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.util.TimeWindow;
 
@@ -24,7 +24,7 @@ public class Package extends Parcel implements CommunicationUser, TickListener {
 	private final Mailbox mailbox = new Mailbox();
 
 	// Beliefs
-	private Container deliveringTruck;
+	private Vehicle deliveringTruck;
 	private long deliveryTime;
 
 	public Package(Point pDestination, long pPickupDuration,
