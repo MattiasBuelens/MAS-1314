@@ -1,23 +1,21 @@
 package mas.daan;
 
-import rinde.sim.core.model.communication.CommunicationUser;
-import rinde.sim.core.model.communication.Message;
-
-public class Proposal extends Message {
+public class Proposal extends PackageMessage {
 
 	private double ETA;
-	
-	
-	public Proposal(CommunicationUser sender, double ETA) 
-	{
+
+	public Proposal(Package sender, double ETA) {
 		super(sender);
-		ETA = ETA;
+		this.ETA = ETA;
 	}
-	
-	
-	public double getETA()
-	{
+
+	public double getETA() {
 		return ETA;
+	}
+
+	@Override
+	public void accept(MessageVisitor visitor) {
+		visitor.visitProposal(this);
 	}
 
 }

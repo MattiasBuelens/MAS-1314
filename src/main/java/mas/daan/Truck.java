@@ -3,13 +3,11 @@ package mas.daan;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
 import org.apache.commons.math3.random.RandomGenerator;
 
-import rinde.sim.core.SimulatorUser;
 import rinde.sim.core.TickListener;
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
@@ -17,10 +15,8 @@ import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
-import rinde.sim.core.model.road.GraphRoadModel;
 import rinde.sim.core.model.road.MovingRoadUser;
 import rinde.sim.core.model.road.RoadModel;
-import rinde.sim.core.model.road.RoadUser;
 
 public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 
@@ -64,7 +60,7 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 
 	public void tick(TimeLapse timeLapse)
 	{
-		Boolean packagesLost = checkMessages();
+		boolean packagesLost = checkMessages();
 		extendRoute(newbies);
 		if(packagesLost)
 		{
@@ -84,59 +80,72 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 
 	// TODO oplossen, aanvullen & checken op efficientie O(n^?)
 
-	private Boolean checkMessages()
+	private boolean checkMessages()
 	{
 		// Hier voorzichtig mee omgaan, dit heb je maar eenmaal
 		messages = mailbox.getMessages();
 
-		// onthoud of er packages wegvallen => latere herberekening route met volledige pool
-		Boolean packagesLost = false;
+		MessageHandler handler = new MessageHandler();
 
 		// Sowieso een for want in elk geval is het nodig om een volledige pool te bouwen
 		for( Message m : messages)
 		{
-			if (m instanceof NewPackage)
-			{
-				// TODO try/catch?
-				// enkel een add, niet nodig om het bericht nadien te verwijderen uit de mailbox, niet?
-				newbies.add(((Package) m.getSender())) ;
-			}
-			else if (m instanceof Reminder)
-			{
-				//TODO bij memory inbouwen rond packages, hier ook implementeren
-				// voor memory: van pool naar oldPool en dan zo checken of je al eens alle berekeningen gedaan hebt?
-				// 3 opties, 	1. volledig onbekend = Pool
-				//				2. bekend (commitments) & jezelf: chill
-				//				3. bekend & niet jezelf: verwijderen
-				// TODO beter typecasten in het begin aangezien een Reminder enkel kan komen van een Package
-				if (commitments.contains(((Package) m.getSender())) )
-				{
-					Truck t = ((Package) m.getSender()).getTruck();
-					if (t != this)
-					{
-						// Route opnieuw berekenen of niet? grote impact? kan zijn, lijkt me
-						// Geen rekening houden met packages die pickedUp zijn
-						commitments.remove(((Package) m.getSender()).getPosition());
-						commitments.remove(((Package) m.getSender()).getGoal());
-						packagesLost = true;
-					}
-					// else: do nothing
-				}
-				else
-				{
-					//TODO beslissen of we dit in de pool steken of niet: enkel nieuwe packages overwegen/niet?	
-					pool.add(((Package) m.getSender()));
-				}
-
-			}
-			else // other kind of message: Proposal, periodic update (, packagePickedUp?)
-			{
-				// 
-			}
+			((AbstractMessage)m).accept(handler);
 		} // einde van de loop, alle messages overlopen
 
-		return packagesLost;
+		return handler.hasLostPackages();
 		// TODO als de messages hier niet opgeslagen worden voor verder gebruik, gaan ze hier verloren		
+	}
+	
+	private class MessageHandler implements MessageVisitor {
+
+		private boolean packagesLost = false;
+		
+		public boolean hasLostPackages() {
+			return packagesLost;
+		}
+
+		@Override
+		public void visitNewPackage(NewPackage newPackage) {
+			// TODO try/catch?
+			// enkel een add, niet nodig om het bericht nadien te verwijderen uit de mailbox, niet?
+			newbies.add(newPackage.getSender());
+		}
+
+		@Override
+		public void visitProposal(Proposal proposal) {
+			// TODO
+		}
+
+		@Override
+		public void visitReminder(Reminder reminder) {
+			//TODO bij memory inbouwen rond packages, hier ook implementeren
+			// voor memory: van pool naar oldPool en dan zo checken of je al eens alle berekeningen gedaan hebt?
+			// 3 opties, 	1. volledig onbekend = Pool
+			//				2. bekend (commitments) & jezelf: chill
+			//				3. bekend & niet jezelf: verwijderen
+			// TODO beter typecasten in het begin aangezien een Reminder enkel kan komen van een Package
+			Package sender = reminder.getSender();
+			if (commitments.contains(sender))
+			{
+				Truck t = sender.getTruck();
+				if (t != Truck.this)
+				{
+					// Route opnieuw berekenen of niet? grote impact? kan zijn, lijkt me
+					// Geen rekening houden met packages die pickedUp zijn
+					commitments.remove(sender.getPosition());
+					commitments.remove(sender.getGoal());
+					packagesLost = true;
+				}
+				// else: do nothing
+			}
+			else
+			{
+				//TODO beslissen of we dit in de pool steken of niet: enkel nieuwe packages overwegen/niet?	
+				pool.add(sender);
+			}
+		}
+		
 	}
 
 

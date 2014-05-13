@@ -35,6 +35,7 @@ public class Package implements RoadUser, CommunicationUser
 	{
 
 		//TODO waar wordt de deliveryLimit geset???
+		this.deliveryLimit = Double.NaN;
 		this.name = name;
 		this.Position = location;
 	}
@@ -149,6 +150,7 @@ public class Package implements RoadUser, CommunicationUser
 		// TODO Auto-generated method stub
 		
 	}
+	
 }
 
 

@@ -1,12 +1,13 @@
 package mas.daan;
 
-import rinde.sim.core.model.communication.CommunicationUser;
-import rinde.sim.core.model.communication.Message;
+public class Reminder extends PackageMessage {
 
-public class Reminder extends Message {
-
-	public Reminder(CommunicationUser sender) {
+	public Reminder(Package sender) {
 		super(sender);
+	}
+
+	public void accept(MessageVisitor visitor) {
+		visitor.visitReminder(this);
 	}
 
 }
