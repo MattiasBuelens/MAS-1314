@@ -30,8 +30,6 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 	//Moet zo geformuleerd worden door de aard van mailbox.getMessages()
 	private Queue<Message> messages;
 	private Set<Package> commitments;
-	// TODO dit mag geen hashmap zijn want moet georderd zijn. Wat dan wel gebruiken?
-	private HashMap<Point, Package> path;
 	private LinkedList<RoutePoint> route;
 	private LinkedList<Point> path;
 
@@ -176,9 +174,9 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 		Point lastPoint = this.getPosition();
 		double totalDistance = 0;
 		double shortest = Double.MAX_VALUE;
-		RoutePoint shortestRP;
+		RoutePoint shortestRP = null;
 		LinkedList <RoutePoint> allPoints = route;
-		LinkedList <RoutePoint> newRoute;
+		LinkedList <RoutePoint> newRoute = null;
 		Set<Package> container = new HashSet<Package>(pickedUp);
 		
 		Boolean invalid = false;
@@ -217,17 +215,14 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 	} 
 	
 	/**
-	// TODO hier in de return value nog de beoordelingscriteria vastleggen: distance, ...
 	private double nearestNeighbor(Package p)
 	{
-		//TODO nog veranderen, latestETA wordt sowieso ingesteld maar de functie was nog niet afgewerkt
 		double latestETA = 0;
 		if (commitments.isEmpty())
 		{
 			commitments.add(p);
 			path.put(p.getPosition(), p);
 			path.put(p.getGoal(), p);
-			// TODO import van graph model hiermee laten overeenkomen
 			// graph model is hier hard gecodeerd
 			// computeConnectionLenght() is protected. Is er hier een weg errond of 
 			// gaan we verder via roadModel.getConnection().getLenght()?
@@ -237,7 +232,6 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 			{
 				totalDistance = totalDistance + Point.distance(list.get(i), list.get(i+1));
 			}
-			//TODO check eenheden van afstand, tijd
 			latestETA = totalDistance/VEHICLE_SPEED;	
 		}
 		else //commitments not empty
@@ -277,7 +271,6 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 			possiblePath.put(lastPoint, allPoints.get(lastPoint));
 			allPoints.remove(lastPoint);
 
-			//TODO werken met status van pakket om pickup te filteren?
 			while (allPoints.size() != 0)
 			{
 				for(Point point : allPoints.keySet())
