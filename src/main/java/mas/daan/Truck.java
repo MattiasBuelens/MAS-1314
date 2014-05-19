@@ -20,109 +20,86 @@ import rinde.sim.core.model.road.RoadModel;
 
 public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 
+	private static final Exception InvalidRouteException = null;
 	protected RoadModel roadModel;
 	protected final RandomGenerator rnd;
-	
+
 	private final double VEHICLE_SPEED;
 	private final double RADIUS;
 	private final double RELIABILITY;
 	private final Mailbox mailbox;
-	//Moet zo geformuleerd worden door de aard van mailbox.getMessages()
-	private Queue<Message> messages;
-	private Set<Package> commitments;
-	private LinkedList<RoutePoint> route;
-	private LinkedList<Point> path;
-
+	private LinkedList<Package> commitments;
+	private Route route;
 
 	private Set<Package> pickedUp;
 	private Set<Package> newbies;
 	private Set<Package> pool;
 
-	// TODO nodig voor GUI in TruckSimulator, hopelijk nog verwijderen
-	public static final String C_BLACK = "color.black";
-	public static final String C_YELLOW = "color.yellow";
-	public static final String C_GREEN = "color.green";
 
-
-
-	public Truck(RandomGenerator r, double speed, double radius, double reliability ) {
-
+	public Truck(RandomGenerator r, double speed, double radius, double reliability ) 
+	{
 		rnd = r;
 		VEHICLE_SPEED = speed;
 		RADIUS = radius;
 		RELIABILITY = reliability;
 		mailbox =  new Mailbox ();
-
 	}
 
 
 	public void tick(TimeLapse timeLapse)
 	{
+		// checkMessages(): build pool
 		boolean packagesLost = checkMessages();
-		extendRoute(newbies);
+		extendRoute(newbies, timeLapse);
 		if(packagesLost)
 		{
-			extendRoute(pool);
+			extendRoute(pool, timeLapse);
 		}
-
-		// wat met de tijd die mogelijk op overschot is, wordt hier meteen verdergereden naar de volgende bestemming?
 		
-		
+		// TODO:  hoe wordt er vooruitgegaan? while loop 'while time left'?
 		// ofwel:
-		roadModel.moveTo(this, path, timeLapse);
+		roadModel.moveTo(this, route.getRoute().get(0), timeLapse);
 		// ofwel:
-		roadModel.followPath(this, path, timeLapse);
+		roadModel.followPath(this, this.route.getRoute(), timeLapse);
 	} 	
-
-
-
-	// TODO oplossen, aanvullen & checken op efficientie O(n^?)
 
 	private boolean checkMessages()
 	{
 		// Hier voorzichtig mee omgaan, dit heb je maar eenmaal
-		messages = mailbox.getMessages();
-
+		Queue<Message> messages = mailbox.getMessages();
 		MessageHandler handler = new MessageHandler();
-
-		// Sowieso een for want in elk geval is het nodig om een volledige pool te bouwen
-		for( Message m : messages)
+		for (Message m : messages)
 		{
-			((AbstractMessage)m).accept(handler);
-		} // einde van de loop, alle messages overlopen
-
+			// TODO nog foutje?
+			((AbstractMessage) m).accept(handler);
+		} 
 		return handler.hasLostPackages();
-		// TODO als de messages hier niet opgeslagen worden voor verder gebruik, gaan ze hier verloren		
 	}
-	
+
 	private class MessageHandler implements MessageVisitor {
 
 		private boolean packagesLost = false;
-		
+
 		public boolean hasLostPackages() {
 			return packagesLost;
 		}
 
 		@Override
-		public void visitNewPackage(NewPackage newPackage) {
-			// TODO try/catch?
-			// enkel een add, niet nodig om het bericht nadien te verwijderen uit de mailbox, niet?
+		public void visitNewPackage(NewPackage newPackage) 
+		{
 			newbies.add(newPackage.getSender());
 		}
 
 		@Override
-		public void visitProposal(Proposal proposal) {
-			// TODO
+		public void visitProposal(Proposal proposal) 
+		{
+			// TODO Betekenis voor Truck != betekenis voor Package. Waar wordt dat verschil in verwerkt?
 		}
 
 		@Override
-		public void visitReminder(Reminder reminder) {
-			//TODO bij memory inbouwen rond packages, hier ook implementeren
-			// voor memory: van pool naar oldPool en dan zo checken of je al eens alle berekeningen gedaan hebt?
-			// 3 opties, 	1. volledig onbekend = Pool
-			//				2. bekend (commitments) & jezelf: chill
-			//				3. bekend & niet jezelf: verwijderen
-			// TODO beter typecasten in het begin aangezien een Reminder enkel kan komen van een Package
+		public void visitReminder(Reminder reminder) 
+		{
+			// TODO waarom werkt dit niet?
 			Package sender = reminder.getSender();
 			if (commitments.contains(sender))
 			{
@@ -143,48 +120,82 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 				pool.add(sender);
 			}
 		}
-		
-	}
-
-
-
-	private void extendRoute(Set<Package> set)
-	{
-		for(Package p : set)
-		{
-			LinkedList<RoutePoint> route = this.nN(p);
-			// use route to calculate latest ETA
-			// compare ETA with others
-			
-		}
-		// determine what package to take on in the route
-		// this.path = route;
-		// + broadcast Proposal to package!
-		
-		// REPEAT? HOW MANY TIMES?
 	}
 
 	
-	private LinkedList<RoutePoint> nN(Package p)
+	// set is not yet cloned, so the set is empty when the method has finished!
+	private void extendRoute(Set<Package> set, TimeLapse timeLapse)
 	{
-		// NOG ALTIJD VEEL TE ZWAAR: n^5 ofzo. Dus beter een lijst bijhouden van welke pakketen
-		// al eens overwogen zijn om die dan voor eeuwig te bannen;
-		
-		// Maak je hierin een failsafe voor tijdslimieten of niet?
+		Package bestPackage = null;
+		double bestETA = Double.MAX_VALUE;
+		Route currentRoute;
+		Route bestRoute = null;
+
+		// TODO while conditions are yet to be set: 1 extra package per tick, 3, as many as you want? 
+		while(!set.isEmpty())	// now: until all packages are discarded, invalid or committed to
+		{
+			HashSet<Package> toDelete = new HashSet<Package>();
+			for (Package p : set)
+			{
+				try 
+				{
+					currentRoute = nN(p, timeLapse);
+					
+					// Or Route works with ETA, or with length
+					// TODO change ETA to length
+					if (currentRoute.getLatestETA()<bestETA)
+					{
+						bestRoute = currentRoute;
+						bestETA = currentRoute.getLatestETA();
+						// why save this info?
+						bestPackage = p;
+					}
+				}
+				catch (InvalidRouteException exception)
+				{
+					// delete invalid package
+					toDelete.add(p);
+				}	
+			}
+
+			if (bestRoute != null)
+			{
+				this.route = bestRoute;
+				commitments.add(bestPackage);
+				// TODO aanpassen van ETA raadplegen in Route naar length en timeLapse
+				Proposal prop = new Proposal(this, bestPackage, bestRoute.getETAOf(bestPackage, timeLapse, this));
+			}
+			
+			// Delete invalid, discarded packages
+			for (Package p : toDelete)
+			{
+				set.remove(p);
+			}
+			
+			//Reinitialize variables
+			bestRoute = null;
+			bestETA = Double.MAX_VALUE;
+			bestPackage = null;
+		}		
+	}
+
+	
+	private Route nN(Package p, TimeLapse timeLapse) throws InvalidRouteException
+	{
 		Point lastPoint = this.getPosition();
 		double totalDistance = 0;
 		double shortest = Double.MAX_VALUE;
 		RoutePoint shortestRP = null;
-		LinkedList <RoutePoint> allPoints = route;
-		LinkedList <RoutePoint> newRoute = null;
-		Set<Package> container = new HashSet<Package>(pickedUp);
-		
-		Boolean invalid = false;
-		
+
+		LinkedList<RoutePoint> allPoints = new LinkedList<RoutePoint>(this.getRoute().getPath());
+		LinkedList<RoutePoint> newRoute = new LinkedList<RoutePoint>();
+		HashSet<Package> container = new HashSet<Package>(pickedUp);
+
 		allPoints.add(new RoutePoint(p.getPosition(), p));
 		allPoints.add(new RoutePoint(p.getGoal(), p));
-		
-		while (allPoints.size() != 0 && invalid == false)
+
+		//TODO: hier opties nog eens uitleggen om loop te vermijden
+		while (allPoints.size() != 0)
 		{
 			for (RoutePoint rp : allPoints)
 			{
@@ -194,26 +205,37 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 					{
 						shortestRP = rp;
 						shortest = Point.distance(lastPoint, rp.getPoint());
-						// TODO mechanisme om deliveryLimit te implementeren adhv totalDistance => invalid
 					}
 				}				
 			}
-			
-			newRoute.addLast(shortestRP);
-			if (shortestRP.getPoint() == shortestRP.getPacket().getPosition())
+			// loop is over, shortest distance selected
+
+			totalDistance =+ Point.distance(lastPoint,  shortestRP.getPoint());
+			if ( timeLapse.getTime() + new Double(totalDistance/this.getSpeed()).longValue() > p.getDeliveryLimit() )
 			{
-				container.add(shortestRP.getPacket());
+				new InvalidRouteException("ETA constraint violated, invalid route");
 			}
-			allPoints.remove(shortestRP);
-			totalDistance = totalDistance + Point.distance(lastPoint, shortestRP.getPoint());
-			lastPoint = shortestRP.getPoint();
-			
-			shortest = Double.MAX_VALUE;
+			else 
+			{
+				newRoute.addLast(shortestRP);
+				allPoints.remove(shortestRP);
+				lastPoint = shortestRP.getPoint();
+				shortest = Double.MAX_VALUE;
+				if (shortestRP.getPoint() == shortestRP.getPacket().getPosition())
+				{
+					// simulation of picked up packets to ensure the right order
+					container.add(shortestRP.getPacket());
+				}
+				// not necessary to reinitialize shortestRP I suppose?
+			}
 		}
-		
-		return newRoute;
+
+		// At this point the ideal route is created
+		// Check Route for changes to be made!
+		Route routeObject = new Route(newRoute, timeLapse.getTime() + new Double(totalDistance/this.getSpeed()).longValue());
+		return routeObject;
 	} 
-	
+
 	/**
 	private double nearestNeighbor(Package p)
 	{
@@ -303,8 +325,8 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 		}
 		return latestETA;
 	}
-	
-	**/
+
+	 **/
 
 	// the MovingRoadUser interface indicates that this class can move on a
 	// RoadModel. The TickListener interface indicates that this class wants
@@ -323,43 +345,40 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 
 	public double getSpeed() {
 		// the drivers speed
-		return VEHICLE_SPEED;
-	}
-	
-	public double getRadius() 
-	{
-		return RADIUS;
-	}
-	
-	
-	public double getReliability()
-	{
-		return RELIABILITY;
-	}
-	
-	public Point getPosition()
-	{
-		return roadModel.getPosition(this);
+		return this.VEHICLE_SPEED;
 	}
 
+	public double getRadius() 
+	{
+		return this.RADIUS;
+	}
+
+	public double getReliability()
+	{
+		return this.RELIABILITY;
+	}
+
+	public Point getPosition()
+	{
+		return this.roadModel.getPosition(this);
+	}
+
+	public Route getRoute()
+	{
+		return this.route;
+	}
 
 	public void setCommunicationAPI(CommunicationAPI api) {
 		// TODO Auto-generated method stub
-		
-	}
 
+	}
 
 	public void receive(Message message) {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
-	
-	
-	
-	
-	
-	
+
+
 }
 
 

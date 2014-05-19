@@ -2,14 +2,22 @@ package mas.daan;
 
 public class Proposal extends PackageMessage {
 
-	private double ETA;
+	private long ETA;
+	private Package packet;
 
-	public Proposal(Package sender, double ETA) {
+	public Proposal(Truck sender, Package packet, long ETA) {
 		super(sender);
+		this.packet =  packet;
 		this.ETA = ETA;
 	}
 
-	public double getETA() {
+	public Package getPackage()
+	{
+		return this.packet;
+	}
+	
+	public long getETA() 
+	{
 		return ETA;
 	}
 

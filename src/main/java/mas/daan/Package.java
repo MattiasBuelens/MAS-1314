@@ -16,13 +16,12 @@ public class Package implements RoadUser, CommunicationUser
 {
 	public final String name;
 	private Point Position;
-	private final double deliveryLimit;
+	private final long deliveryLimit;
 	// TODO initialiseren op een heel hoge waarde
-	private double bestETA;
+	private long bestETA;
 	private Point goal;
 	private Mailbox mailbox;
 	private Truck assignedTruck;
-
 
 	private CommunicationModel cm;
 
@@ -35,7 +34,7 @@ public class Package implements RoadUser, CommunicationUser
 	{
 
 		//TODO waar wordt de deliveryLimit geset???
-		this.deliveryLimit = Double.NaN;
+		this.deliveryLimit = (long) Double.NaN;
 		this.name = name;
 		this.Position = location;
 	}
@@ -144,7 +143,10 @@ public class Package implements RoadUser, CommunicationUser
 		return 0;
 	}
 
-
+	public long getDeliveryLimit()
+	{
+		return deliveryLimit;
+	}
 
 	public void receive(Message message) {
 		// TODO Auto-generated method stub
