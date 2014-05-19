@@ -55,7 +55,7 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 		{
 			extendRoute(pool, timeLapse);
 		}
-		
+
 		// TODO:  hoe wordt er vooruitgegaan? while loop 'while time left'?
 		// ofwel:
 		roadModel.moveTo(this, route.getRoute().get(0), timeLapse);
@@ -122,7 +122,7 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 		}
 	}
 
-	
+
 	// set is not yet cloned, so the set is empty when the method has finished!
 	private void extendRoute(Set<Package> set, TimeLapse timeLapse)
 	{
@@ -140,13 +140,13 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 				try 
 				{
 					currentRoute = nN(p, timeLapse);
-					
+
 					// Or Route works with ETA, or with length
 					// TODO change ETA to length
-					if (currentRoute.getLatestETA()<bestETA)
+					if (currentRoute.getLatestETA(timeLapse, this)<bestETA)
 					{
 						bestRoute = currentRoute;
-						bestETA = currentRoute.getLatestETA();
+						bestETA = currentRoute.getLatestETA(timeLapse, this);
 						// why save this info?
 						bestPackage = p;
 					}
@@ -165,13 +165,13 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 				// TODO aanpassen van ETA raadplegen in Route naar length en timeLapse
 				Proposal prop = new Proposal(this, bestPackage, bestRoute.getETAOf(bestPackage, timeLapse, this));
 			}
-			
+
 			// Delete invalid, discarded packages
 			for (Package p : toDelete)
 			{
 				set.remove(p);
 			}
-			
+
 			//Reinitialize variables
 			bestRoute = null;
 			bestETA = Double.MAX_VALUE;
@@ -179,7 +179,80 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 		}		
 	}
 
-	
+
+	//EERSTE NN: originele nN met extra check: als er moet gewacht worden, kies dan een ander punt 
+	// geimplementeerd via boolean waitingAllowed die aangezet wordt als er geen viabele opties zijn 
+	// nadat alles op de normale drie checks gepasseerd is. Conditie die dit implementeert is wat ingewikkeld
+	private Route nN(Package p, TimeLapse timeLapse) throws InvalidRouteException
+	{
+		Point lastPoint = this.getPosition();
+		double totalDistance = 0;
+		double shortest = Double.MAX_VALUE;
+		RoutePoint shortestRP = null;
+
+		LinkedList<RoutePoint> allPoints = new LinkedList<RoutePoint>(this.getRoute().getPath());
+		LinkedList<RoutePoint> newRoute = new LinkedList<RoutePoint>();
+		HashSet<Package> container = new HashSet<Package>(pickedUp);
+
+		allPoints.add(new RoutePoint(p.getPosition(), p));
+		allPoints.add(new RoutePoint(p.getGoal(), p));
+
+		boolean waitingAllowed = false;
+
+		//TODO: hier opties nog eens uitleggen om loop te vermijden
+		while (allPoints.size() != 0)
+		{
+			for (RoutePoint rp : allPoints)
+			{
+				if (Point.distance(lastPoint, rp.getPoint()) < shortest)
+				{
+					if ( !(!container.contains(rp.getPacket()) && rp.getPoint() == rp.getPacket().getGoal() ) )
+					{
+						// TODO waarom geeft dit geen error terwjil het weer vergelijkt met een long
+						boolean checkPickupLimit = (totalDistance + Point.distance(lastPoint, rp.getPoint())/this.getSpeed()) > p.getPickupLimit();
+						if ( checkPickupLimit != waitingAllowed) 
+						{
+							shortestRP = rp;
+							shortest = Point.distance(lastPoint, rp.getPoint());
+						}
+					}
+				}				
+			}
+			// loop is over, shortest distance selected
+
+			if (shortest == Double.MAX_VALUE)
+				waitingAllowed = true;
+			else
+			{
+				waitingAllowed = false;
+				totalDistance =+ Point.distance(lastPoint,  shortestRP.getPoint());
+				if ( timeLapse.getTime() + new Double(totalDistance/this.getSpeed()).longValue() > p.getDeliveryLimit() )
+					throw new InvalidRouteException("ETA constraint violated, invalid route");
+				else 
+				{
+					newRoute.addLast(shortestRP);
+					allPoints.remove(shortestRP);
+					lastPoint = shortestRP.getPoint();
+					shortest = Double.MAX_VALUE;
+					if (shortestRP.getPoint() == shortestRP.getPacket().getPosition())
+						// simulation of picked up packets to ensure the right order
+						container.add(shortestRP.getPacket());
+					// not necessary to reinitialize shortestRP I suppose?
+				}
+			}
+		}
+
+		// At this point the ideal route is created
+		// Check Route for changes to be made!
+		Route routeObject = new Route(newRoute);
+		return routeObject;
+	} 
+
+
+	/**
+
+	//TWEEDE NN: waiting allowed, maar er is nog een failsafe met de invalid routes dus te lang wachten 
+	// wordt nog gestraft, is eigenlijk ons algoritme voor we wisten van windows
 	private Route nN(Package p, TimeLapse timeLapse) throws InvalidRouteException
 	{
 		Point lastPoint = this.getPosition();
@@ -203,8 +276,13 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 				{
 					if ( !(!container.contains(rp.getPacket()) && rp.getPoint() == rp.getPacket().getGoal() ) )
 					{
-						shortestRP = rp;
-						shortest = Point.distance(lastPoint, rp.getPoint());
+						// TODO waarom geeft dit geen error terwjil het weer vergelijkt met een long
+						boolean checkPickupLimit = (totalDistance + Point.distance(lastPoint, rp.getPoint())/this.getSpeed()) > p.getPickupLimit();
+						if ( checkPickupLimit) 
+						{
+							shortestRP = rp;
+							shortest = Point.distance(lastPoint, rp.getPoint());
+						}
 					}
 				}				
 			}
@@ -212,9 +290,7 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 
 			totalDistance =+ Point.distance(lastPoint,  shortestRP.getPoint());
 			if ( timeLapse.getTime() + new Double(totalDistance/this.getSpeed()).longValue() > p.getDeliveryLimit() )
-			{
-				new InvalidRouteException("ETA constraint violated, invalid route");
-			}
+				throw new InvalidRouteException("ETA constraint violated, invalid route");
 			else 
 			{
 				newRoute.addLast(shortestRP);
@@ -222,164 +298,189 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 				lastPoint = shortestRP.getPoint();
 				shortest = Double.MAX_VALUE;
 				if (shortestRP.getPoint() == shortestRP.getPacket().getPosition())
-				{
 					// simulation of picked up packets to ensure the right order
 					container.add(shortestRP.getPacket());
-				}
-				// not necessary to reinitialize shortestRP I suppose?
+					// not necessary to reinitialize shortestRP I suppose?
 			}
+
 		}
 
 		// At this point the ideal route is created
 		// Check Route for changes to be made!
-		Route routeObject = new Route(newRoute, timeLapse.getTime() + new Double(totalDistance/this.getSpeed()).longValue());
+		Route routeObject = new Route(newRoute);
 		return routeObject;
 	} 
 
+	 */
+
 	/**
-	private double nearestNeighbor(Package p)
+	//DERDE NN: gelimiteerd naar het checken van 5 punten. Validiteit van de suboptimale oplossing is niet gegarandeerd
+	// en er zijn twee nNs nodig, tenzij je er een extra attribuut bij voegt dat de korte versie aan en uit zet
+	// plus er is een nieuwe extendRoute nodig
+
+	private void extendRoute(Set<Package> set, TimeLapse timeLapse)
 	{
-		double latestETA = 0;
-		if (commitments.isEmpty())
+		Package bestPackage = null;
+		double bestETA = Double.MAX_VALUE;
+		Route currentRoute;
+		Route bestRoute = null;
+
+		// TODO while conditions are yet to be set: 1 extra package per tick, 3, as many as you want? 
+		while(!set.isEmpty())	
 		{
-			commitments.add(p);
-			path.put(p.getPosition(), p);
-			path.put(p.getGoal(), p);
-			// graph model is hier hard gecodeerd
-			// computeConnectionLenght() is protected. Is er hier een weg errond of 
-			// gaan we verder via roadModel.getConnection().getLenght()?
-			List<Point> list = roadModel.getShortestPathTo(this, ((RoadUser) p));
-			double totalDistance =  0;
-			for( int i = 0; i == (list.size()-1); i++)
+			HashSet<Package> toDelete = new HashSet<Package>();
+			LinkedList<Route> routes = new LinkedList<Route>();
+			for (Package p : set)
 			{
-				totalDistance = totalDistance + Point.distance(list.get(i), list.get(i+1));
-			}
-			latestETA = totalDistance/VEHICLE_SPEED;	
-		}
-		else //commitments not empty
-		{
-
-			HashMap<Point, Package> possiblePath =  new HashMap<Point, Package>();
-			HashMap<Point, Package> allPoints = path;
-			allPoints.put(p.getPosition(), p);
-			allPoints.put(p.getGoal(), p);
-
-			// eerste punt instellen met eigen locatie
-			double shortestDistance = Double.MAX_VALUE;
-			Point lastPoint = null;
-
-			for(Point point : allPoints.keySet())
-			{
-				double workDistance = Point.distance(this.getPosition(), point);
-				if (workDistance < shortestDistance)
+				try 
 				{
-					if (point == allPoints.get(point).getPosition())
-					{
-						shortestDistance = workDistance;
-						lastPoint = point;
-					}
-					// point == allPoints.get(point).getGoal()
-					else
-					{
-						if (pickedUp.contains(allPoints.get(point)))
-						{
-							shortestDistance = workDistance;
-							lastPoint = point;
-						}
-					}
+					currentRoute = nN(p, timeLapse, true);
+					routes.add(currentRoute);
 				}
+				catch (InvalidRouteException exception)
+				{
+					// delete invalid package
+					toDelete.add(p);
+				}	
 			}
 
-			possiblePath.put(lastPoint, allPoints.get(lastPoint));
-			allPoints.remove(lastPoint);
-
-			while (allPoints.size() != 0)
+			for (Package p : toDelete)
 			{
-				for(Point point : allPoints.keySet())
-				{
-					double workDistance = Point.distance(lastPoint, point);
-					if (workDistance < shortestDistance)
+				set.remove(p);
+			}
+
+			// TODO NOG OPLOSSEN
+			Collections.sort(routes, Ordering.natural().onResultOf(
+					new Function<Route, double>() 
 					{
-						if (point == allPoints.get(point).getPosition())
+						public double apply(Route from) 
 						{
-							shortestDistance = workDistance;
-							lastPoint = point;
+							return from.getLatestETA(timeLapse, this);
 						}
-						// point == allPoints.get(point).getGoal()
-						else
+					}
+			));
+
+
+		}
+
+		private Route nN(Package p, TimeLapse timeLapse, boolean shortCalc) throws InvalidRouteException
+		{
+			Point lastPoint = this.getPosition();
+			double totalDistance = 0;
+			double shortest = Double.MAX_VALUE;
+			RoutePoint shortestRP = null;
+
+			LinkedList<RoutePoint> allPoints = new LinkedList<RoutePoint>(this.getRoute().getPath());
+			LinkedList<RoutePoint> newRoute = new LinkedList<RoutePoint>();
+			HashSet<Package> container = new HashSet<Package>(pickedUp);
+
+			allPoints.add(new RoutePoint(p.getPosition(), p));
+			allPoints.add(new RoutePoint(p.getGoal(), p));
+
+			boolean condition = allPoints.size() != 0;
+			int i = 0;
+			if (shortCalc)
+				condition =  i < 5;
+
+			//TODO: hier opties nog eens uitleggen om loop te vermijden
+			while (condition)
+			{
+				for (RoutePoint rp : allPoints)
+				{
+					if (Point.distance(lastPoint, rp.getPoint()) < shortest)
+					{
+						if ( !(!container.contains(rp.getPacket()) && rp.getPoint() == rp.getPacket().getGoal() ) )
 						{
-							if (pickedUp.contains(allPoints.get(point)))
+							// TODO waarom geeft dit geen error terwjil het weer vergelijkt met een long
+							boolean checkPickupLimit = (totalDistance + Point.distance(lastPoint, rp.getPoint())/this.getSpeed()) > p.getPickupLimit();
+							if ( checkPickupLimit ) 
 							{
-								shortestDistance = workDistance;
-								lastPoint = point;
+								shortestRP = rp;
+								shortest = Point.distance(lastPoint, rp.getPoint());
 							}
 						}
-					}	
+					}				
 				}
-				possiblePath.put(lastPoint, allPoints.get(lastPoint));
-				allPoints.remove(lastPoint);
+				// loop is over, shortest distance selected
+
+				totalDistance =+ Point.distance(lastPoint,  shortestRP.getPoint());
+				if ( timeLapse.getTime() + new Double(totalDistance/this.getSpeed()).longValue() > p.getDeliveryLimit() )
+					throw new InvalidRouteException("ETA constraint violated, invalid route");
+				else 
+				{
+					newRoute.addLast(shortestRP);
+					allPoints.remove(shortestRP);
+					lastPoint = shortestRP.getPoint();
+					shortest = Double.MAX_VALUE;
+					if (shortestRP.getPoint() == shortestRP.getPacket().getPosition())
+						// simulation of picked up packets to ensure the right order
+						container.add(shortestRP.getPacket());
+					// not necessary to reinitialize shortestRP I suppose?
+				}
+				i++;	
+
 			}
 
-			path = possiblePath;
+			// At this point the ideal route is created
+			// Check Route for changes to be made!
+			Route routeObject = new Route(newRoute);
+			return routeObject;
+		} 
+
+		*/
+
+		// the MovingRoadUser interface indicates that this class can move on a
+		// RoadModel. The TickListener interface indicates that this class wants
+		// to keep track of time.
+		public void initRoadUser(RoadModel model) {
+			// this is where we receive an instance to the model. we store the
+			// reference and add ourselves to the model on a random position.
+			roadModel = model;
+			roadModel.addObjectAt(this, roadModel.getRandomPosition(rnd));
+		}
+
+		public void afterTick(TimeLapse timeLapse) {
+			// we don't need this in this example. This method is called after
+			// all TickListener#tick() calls, hence the name.
+		}
+
+		public double getSpeed() {
+			// the drivers speed
+			return this.VEHICLE_SPEED;
+		}
+
+		public double getRadius() 
+		{
+			return this.RADIUS;
+		}
+
+		public double getReliability()
+		{
+			return this.RELIABILITY;
+		}
+
+		public Point getPosition()
+		{
+			return this.roadModel.getPosition(this);
+		}
+
+		public Route getRoute()
+		{
+			return this.route;
+		}
+
+		public void setCommunicationAPI(CommunicationAPI api) {
+			// TODO Auto-generated method stub
 
 		}
-		return latestETA;
-	}
 
-	 **/
+		public void receive(Message message) {
+			// TODO Auto-generated method stub
 
-	// the MovingRoadUser interface indicates that this class can move on a
-	// RoadModel. The TickListener interface indicates that this class wants
-	// to keep track of time.
-	public void initRoadUser(RoadModel model) {
-		// this is where we receive an instance to the model. we store the
-		// reference and add ourselves to the model on a random position.
-		roadModel = model;
-		roadModel.addObjectAt(this, roadModel.getRandomPosition(rnd));
-	}
+		}
 
-	public void afterTick(TimeLapse timeLapse) {
-		// we don't need this in this example. This method is called after
-		// all TickListener#tick() calls, hence the name.
-	}
-
-	public double getSpeed() {
-		// the drivers speed
-		return this.VEHICLE_SPEED;
-	}
-
-	public double getRadius() 
-	{
-		return this.RADIUS;
-	}
-
-	public double getReliability()
-	{
-		return this.RELIABILITY;
-	}
-
-	public Point getPosition()
-	{
-		return this.roadModel.getPosition(this);
-	}
-
-	public Route getRoute()
-	{
-		return this.route;
-	}
-
-	public void setCommunicationAPI(CommunicationAPI api) {
-		// TODO Auto-generated method stub
 
 	}
-
-	public void receive(Message message) {
-		// TODO Auto-generated method stub
-
-	}
-
-
-}
 
 
 

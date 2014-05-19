@@ -12,17 +12,9 @@ public class Route
 	private LinkedList<Point> route;
 	private final double length;
 	
-	// TODO
-	// Discard this variable because of its timeliness. 
-	// Rather save an attribute to calculate the length until a certain point/package or for the route
-	//  as a whole
-	private long latestETA;
-
-
-	public Route (LinkedList<RoutePoint> path, long latestETA)
+	public Route (LinkedList<RoutePoint> path)
 	{
 		this.path = path;
-		this.latestETA = latestETA;
 		this.toRoute(path);
 		this.length = this.calcLength();
 	}
@@ -40,7 +32,6 @@ public class Route
 	public long getETAOf(Package p, TimeLapse t, Truck truck)
 	{
 		// TODO misschien zijn er hier nog andere methodes van Rinde die kunnen gebruikt worden 
-
 		if (this.route.contains(p))
 		{
 			return -1;
@@ -88,8 +79,25 @@ public class Route
 		return route;
 	}
 
-	public long getLatestETA()
+	public double getLatestETA(TimeLapse timeLapse, Truck truck)
 	{
+		double latestETA = timeLapse.getTime();
+		Point lastPoint = truck.getPosition();
+		for(RoutePoint rp : path)
+		{
+			//time to get there
+			latestETA =+ Point.distance(lastPoint, rp.getPoint())/truck.getSpeed();
+			//wait or not?
+			if ( rp.getPoint() == rp.getPacket().getPosition())
+			{
+				double diff = rp.getPacket().getPickupLimit() - latestETA;
+				if(diff > 0)
+				{
+					latestETA =+ diff;
+				}
+			}
+			lastPoint = rp.getPoint();
+		}
 		return latestETA;
 	}
 
