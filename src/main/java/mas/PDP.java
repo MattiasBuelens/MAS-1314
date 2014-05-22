@@ -100,7 +100,7 @@ public class PDP {
 
 		final UiSchema uis = new UiSchema();
 		uis.add(Truck.class, "/graphics/perspective/empty-truck-32.png");
-		uis.add(Package.class, "/graphics/perspective/deliverypackage.png");
+		uis.add(Packet.class, "/graphics/perspective/deliverypackage.png");
 
 		// initialize the GUI. We use separate renderers for the road model and
 		// for the drivers. By default the road model is rendererd as a square
