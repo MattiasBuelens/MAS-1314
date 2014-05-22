@@ -34,17 +34,22 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		do {
 			if (!hasPlan() || shouldReconsider()) {
 				// Update desires
-				
+
 				// Update intentions
-				
+
 				// Update plan
 				plan = createPlan();
 			} else if (hasPlan() && !isSound(getPlan())) {
 				// Update plan
 				plan = createPlan();
 			}
-			if (hasPlan()) {
+			if (hasValidPlan()) {
 				getPlan().step(this, time);
+				if (!hasValidPlan()) {
+					plan = null;
+				}
+			} else {
+				plan = null;
 			}
 		} while (hasPlan() && time.hasTimeLeft());
 	}
@@ -57,8 +62,16 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		return plan;
 	}
 
+	protected boolean hasValidPlan() {
+		return hasPlan() && !isSucceeded() && !isImpossible();
+	}
+
+	protected abstract boolean isSucceeded();
+
+	protected abstract boolean isImpossible();
+
 	protected abstract boolean shouldReconsider();
-	
+
 	protected abstract Plan<BDIVehicle> createPlan();
 
 	protected abstract boolean isSound(Plan<BDIVehicle> plan);
