@@ -30,16 +30,16 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		Queue<Message> messages = mailbox.getMessages();
 
 		// TODO Update beliefs
+		boolean shouldReconsider = updateBeliefs(messages);
 
 		do {
-			if (!hasPlan() || shouldReconsider()) {
-				// Update desires
-
-				// Update intentions
-
+			if (!hasPlan() || shouldReconsider) {
+				// TODO Update desires + intentions
+				reconsider();
 				// Update plan
 				plan = createPlan();
 			} else if (hasPlan() && !isSound(getPlan())) {
+				// TODO Necessary?
 				// Update plan
 				plan = createPlan();
 			}
@@ -52,6 +52,8 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 				plan = null;
 			}
 		} while (hasPlan() && time.hasTimeLeft());
+
+		// TODO Send messages
 	}
 
 	protected boolean hasPlan() {
@@ -66,11 +68,15 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		return hasPlan() && !isSucceeded() && !isImpossible();
 	}
 
+	protected abstract boolean updateBeliefs(Queue<Message> messages);
+
 	protected abstract boolean isSucceeded();
 
 	protected abstract boolean isImpossible();
 
 	protected abstract boolean shouldReconsider();
+
+	protected abstract void reconsider();
 
 	protected abstract Plan<BDIVehicle> createPlan();
 

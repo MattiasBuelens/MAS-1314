@@ -8,8 +8,8 @@ public class DeliverAction implements Action<BDIVehicle> {
 
 	private final Packet packet;
 
-	public DeliverAction(Packet pkg) {
-		this.packet = pkg;
+	public DeliverAction(Packet packet) {
+		this.packet = packet;
 	}
 
 	@Override

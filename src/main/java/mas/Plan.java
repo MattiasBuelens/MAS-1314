@@ -25,8 +25,8 @@ public class Plan<T> {
 	}
 
 	public boolean step(T target, TimeLapse time) {
-		if (!isEmpty()) {
-			Action<T> step = queue.peek();
+		Action<T> step = queue.peek();
+		if (step != null) {
 			boolean stepDone = step.execute(target, time);
 			if (stepDone) {
 				queue.poll();

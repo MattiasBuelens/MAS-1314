@@ -8,8 +8,8 @@ public class PickupAction implements Action<BDIVehicle> {
 
 	private final Packet packet;
 
-	public PickupAction(Packet pkg) {
-		this.packet = pkg;
+	public PickupAction(Packet packet) {
+		this.packet = packet;
 	}
 
 	@Override
