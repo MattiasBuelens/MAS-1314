@@ -16,6 +16,7 @@ public class Route
 	{
 		this.path = path;
 		this.toRoute(path);
+		// at runtime berekenen
 		this.length = this.calcLength();
 	}
 

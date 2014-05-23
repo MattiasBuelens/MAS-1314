@@ -162,13 +162,15 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 			{
 				this.route = bestRoute;
 				commitments.add(bestPackage);
-				// TODO aanpassen van ETA raadplegen in Route naar length en timeLapse
+				// TODO broadcasten
 				Proposal prop = new Proposal(this, bestPackage, bestRoute.getETAOf(bestPackage, timeLapse, this));
 			}
 
 			// Delete invalid, discarded packages
 			for (Package p : toDelete)
 			{
+				// TODO indien je de pool.newbies wil behouden over verschillende ticks, moet de set nog 
+				// gecloned worden
 				set.remove(p);
 			}
 
@@ -200,6 +202,7 @@ public class Truck implements MovingRoadUser, TickListener,  CommunicationUser {
 		boolean waitingAllowed = false;
 
 		//TODO: hier opties nog eens uitleggen om loop te vermijden
+		// TODO wat met een lege lijst?
 		while (allPoints.size() != 0)
 		{
 			for (RoutePoint rp : allPoints)
