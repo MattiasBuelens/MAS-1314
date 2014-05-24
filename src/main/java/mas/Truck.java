@@ -38,4 +38,34 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 		return settings.getCommunicationReliability();
 	}
 
+	@Override
+	protected boolean isSucceeded() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	protected boolean isImpossible() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	protected boolean shouldReconsider() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	protected Plan<BDIVehicle> createPlan() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected boolean isSound(Plan<BDIVehicle> plan) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

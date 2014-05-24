@@ -17,5 +17,10 @@ public class DeliverAction implements Action<BDIVehicle> {
 		target.deliver(packet, time);
 		return !target.containsPacket(packet);
 	}
+	
+	public Packet getPacket()
+	{
+		return this.packet;
+	}
 
 }

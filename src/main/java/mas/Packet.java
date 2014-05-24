@@ -27,9 +27,9 @@ public class Packet extends Parcel implements CommunicationUser, TickListener {
 	private Vehicle deliveringTruck;
 	private long deliveryTime;
 
-	public Packet(Point pDestination, long pPickupDuration,
-			TimeWindow pickupTW, long pDeliveryDuration, TimeWindow deliveryTW,
-			double pMagnitude, SimulationSettings settings) {
+	public Packet(Point pDestination, long pPickupDuration,	TimeWindow pickupTW, long pDeliveryDuration,
+			TimeWindow deliveryTW, double pMagnitude, SimulationSettings settings) 
+	{
 		super(pDestination, pPickupDuration, pickupTW, pDeliveryDuration,
 				deliveryTW, pMagnitude);
 		this.settings = settings;
@@ -86,5 +86,11 @@ public class Packet extends Parcel implements CommunicationUser, TickListener {
 	public double getReliability() {
 		return settings.getCommunicationReliability();
 	}
+	
+	public Vehicle getVehicle()
+	{
+		return this.deliveringTruck;
+	}
+	
 
 }

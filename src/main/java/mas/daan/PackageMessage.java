@@ -1,16 +1,18 @@
 package mas.daan;
 
+import mas.Packet;
+
 public abstract class PackageMessage extends AbstractMessage {
 
-	protected final Package sender;
+	protected final Packet sender;
 
-	public PackageMessage(Package sender) {
+	public PackageMessage(Packet sender) {
 		super(sender);
 		this.sender = sender;
 	}
 
 	@Override
-	public Package getSender() {
+	public Packet getSender() {
 		return sender;
 	}
 

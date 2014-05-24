@@ -1,17 +1,20 @@
 package mas.daan;
 
+import mas.Packet;
+
 public class Proposal extends PackageMessage {
 
 	private long ETA;
-	private Package packet;
+	private Packet packet;
 
-	public Proposal(Truck sender, Package packet, long ETA) {
+	// TODO is dit wel onderdeel van PacketMessage? niet van TruckMessage ofzo?
+	public Proposal(Truck sender, Packet packet, long ETA) {
 		super(sender);
 		this.packet =  packet;
 		this.ETA = ETA;
 	}
 
-	public Package getPackage()
+	public Packet getPacket()
 	{
 		return this.packet;
 	}
