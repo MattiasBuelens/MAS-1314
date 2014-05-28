@@ -1,9 +1,12 @@
 package mas;
 
+import java.util.Queue;
+
 import org.apache.commons.math3.random.RandomGenerator;
 
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationUser;
+import rinde.sim.core.model.communication.Message;
 
 public class Truck extends BDIVehicle implements CommunicationUser {
 
@@ -39,6 +42,12 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	}
 
 	@Override
+	protected boolean updateBeliefs(Queue<Message> messages) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
 	protected boolean isSucceeded() {
 		// TODO Auto-generated method stub
 		return false;
@@ -57,15 +66,9 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	}
 
 	@Override
-	protected Plan<BDIVehicle> createPlan() {
+	protected Plan<BDIVehicle> reconsider() {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	protected boolean isSound(Plan<BDIVehicle> plan) {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 }
