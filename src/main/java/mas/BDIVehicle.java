@@ -1,9 +1,13 @@
 package mas;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 
 import javax.annotation.Nullable;
 
+import mas.timer.Timer;
+import mas.timer.TimerCallback;
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationAPI;
@@ -24,24 +28,20 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 	@Nullable
 	private Plan<BDIVehicle> plan;
 
+	private final List<Timer> timers = new ArrayList<>();
+
 	@Override
 	protected void tickImpl(TimeLapse time) {
 		// Read messages
 		Queue<Message> messages = mailbox.getMessages();
 
-		// TODO Update beliefs
+		// Update beliefs
 		boolean shouldReconsider = updateBeliefs(messages);
 
 		do {
 			if (!hasPlan() || shouldReconsider) {
-				// TODO Update desires + intentions
-				reconsider();
-				// Update plan
-				plan = createPlan();
-			} else if (hasPlan() && !isSound(getPlan())) {
-				// TODO Necessary?
-				// Update plan
-				plan = createPlan();
+				// Update desires + intentions + plan
+				plan = reconsider();
 			}
 			if (hasValidPlan()) {
 				getPlan().step(this, time);
@@ -54,6 +54,9 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		} while (hasPlan() && time.hasTimeLeft());
 
 		// TODO Send messages
+
+		// Run timers
+		runTimers(time.getTime());
 	}
 
 	protected boolean hasPlan() {
@@ -76,11 +79,40 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 
 	protected abstract boolean shouldReconsider();
 
-	protected abstract void reconsider();
+	protected abstract Plan<BDIVehicle> reconsider();
 
-	protected abstract Plan<BDIVehicle> createPlan();
+	/*
+	 * Timers
+	 */
 
-	protected abstract boolean isSound(Plan<BDIVehicle> plan);
+	protected Timer addTimer(long time, TimerCallback callback) {
+		Timer timer = new Timer(time, callback);
+		timers.add(timer);
+		return timer;
+	}
+
+	protected void cancelTimer(Timer timer) {
+		timer.cancel();
+		timers.remove(timer);
+	}
+
+	private void runTimers(long currentTime) {
+		// Sort timers by time
+		List<Timer> toRun = Timer.timeOrdering.immutableSortedCopy(timers);
+		// Timers to remove
+		List<Timer> toRemove = new ArrayList<>();
+		// Run timers
+		for (Timer timer : toRun) {
+			timer.run(currentTime);
+			if (!timer.isActive()) {
+				toRemove.add(timer);
+			}
+		}
+		// Remove timers
+		for (Timer timer : toRemove) {
+			timers.remove(timer);
+		}
+	}
 
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
