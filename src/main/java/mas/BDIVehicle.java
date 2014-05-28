@@ -114,6 +114,23 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		}
 	}
 
+	/*
+	 * Communication
+	 */
+
+	protected void send(CommunicationUser recipient, Message message) {
+		commAPI.send(recipient, message);
+	}
+
+	protected void broadcast(Message message) {
+		commAPI.broadcast(message);
+	}
+
+	protected void broadcast(Message message,
+			Class<? extends CommunicationUser> type) {
+		commAPI.broadcast(message, type);
+	}
+
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		// TODO
@@ -126,7 +143,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 
 	@Override
 	public void setCommunicationAPI(CommunicationAPI api) {
-		this.commAPI = api;
+		commAPI = api;
 	}
 
 	@Override
