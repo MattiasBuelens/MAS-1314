@@ -4,6 +4,12 @@ import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Message;
 
+/**
+ * Base class for messages.
+ * 
+ * @param <S>
+ *            The sender type.
+ */
 public abstract class AbstractMessage<S extends CommunicationUser> extends
 		Message {
 

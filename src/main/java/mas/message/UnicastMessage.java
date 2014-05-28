@@ -3,6 +3,14 @@ package mas.message;
 import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.CommunicationUser;
 
+/**
+ * A unicast message sent to one specific recipient.
+ * 
+ * @param <S>
+ *            The sender type.
+ * @param <R>
+ *            The recipient type.
+ */
 public abstract class UnicastMessage<S extends CommunicationUser, R extends CommunicationUser>
 		extends AbstractMessage<S> {
 

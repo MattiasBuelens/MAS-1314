@@ -3,6 +3,15 @@ package mas.message;
 import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.CommunicationUser;
 
+/**
+ * A broadcast message sent to all possible recipients of the given recipient
+ * type.
+ * 
+ * @param <S>
+ *            The sender type.
+ * @param <R>
+ *            The recipient type.
+ */
 public abstract class TypedBroadcastMessage<S extends CommunicationUser, R extends CommunicationUser>
 		extends AbstractMessage<S> {
 
