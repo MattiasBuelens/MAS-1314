@@ -6,6 +6,7 @@ import java.util.Queue;
 
 import javax.annotation.Nullable;
 
+import mas.message.AbstractMessage;
 import mas.timer.Timer;
 import mas.timer.TimerCallback;
 import rinde.sim.core.TimeLapse;
@@ -118,22 +119,28 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 	 * Communication
 	 */
 
-	protected void send(CommunicationUser recipient, Message message) {
-		commAPI.send(recipient, message);
+	protected void transmit(AbstractMessage<? extends BDIVehicle> message) {
+		message.transmit(commAPI);
 	}
 
-	protected void broadcast(Message message) {
-		commAPI.broadcast(message);
+	/*
+	 * Actions
+	 */
+
+	public MoveProgress moveTo(Point destination, TimeLapse time) {
+		return getRoadModel().moveTo(this, destination, time);
 	}
 
-	protected void broadcast(Message message,
-			Class<? extends CommunicationUser> type) {
-		commAPI.broadcast(message, type);
+	public void pickup(Parcel parcel, TimeLapse time) {
+		getPDPModel().pickup(this, parcel, time);
 	}
 
-	@Override
-	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
-		// TODO
+	public void deliver(Parcel parcel, TimeLapse time) {
+		getPDPModel().deliver(this, parcel, time);
+	}
+
+	public boolean containsPacket(Parcel parcel) {
+		return getPDPModel().containerContains(this, parcel);
 	}
 
 	@Override
@@ -151,20 +158,8 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		return getRoadModel().getPosition(this);
 	}
 
-	public MoveProgress moveTo(Point destination, TimeLapse time) {
-		return getRoadModel().moveTo(this, destination, time);
-	}
-
-	public void pickup(Parcel parcel, TimeLapse time) {
-		getPDPModel().pickup(this, parcel, time);
-	}
-
-	public void deliver(Parcel parcel, TimeLapse time) {
-		getPDPModel().deliver(this, parcel, time);
-	}
-
-	public boolean containsPacket(Parcel parcel) {
-		return getPDPModel().containerContains(this, parcel);
+	@Override
+	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 	}
 
 }

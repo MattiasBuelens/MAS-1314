@@ -2,7 +2,11 @@ package mas;
 
 import java.util.Queue;
 
-import mas.message.ParcelUpdate;
+import mas.message.AbstractMessage;
+import mas.message.PacketMessage;
+import mas.message.PacketMessageVisitor;
+import mas.message.PacketPing;
+import mas.message.Proposal;
 import rinde.sim.core.TickListener;
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
@@ -16,7 +20,8 @@ import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.util.TimeWindow;
 
-public class Packet extends Parcel implements CommunicationUser, TickListener {
+public class Packet extends Parcel implements CommunicationUser, TickListener,
+		PacketMessageVisitor {
 
 	private final SimulationSettings settings;
 
@@ -27,9 +32,9 @@ public class Packet extends Parcel implements CommunicationUser, TickListener {
 	private Vehicle deliveringTruck;
 	private long deliveryTime;
 
-	public Packet(Point pDestination, long pPickupDuration,	TimeWindow pickupTW, long pDeliveryDuration,
-			TimeWindow deliveryTW, double pMagnitude, SimulationSettings settings) 
-	{
+	public Packet(Point pDestination, long pPickupDuration,
+			TimeWindow pickupTW, long pDeliveryDuration, TimeWindow deliveryTW,
+			double pMagnitude, SimulationSettings settings) {
 		super(pDestination, pPickupDuration, pickupTW, pDeliveryDuration,
 				deliveryTW, pMagnitude);
 		this.settings = settings;
@@ -40,23 +45,41 @@ public class Packet extends Parcel implements CommunicationUser, TickListener {
 		// Read messages
 		Queue<Message> messages = mailbox.getMessages();
 
-		// TODO Update beliefs
+		// Update beliefs
+		updateBeliefs(messages);
 
 		// Broadcast update
-		ParcelUpdate update = new ParcelUpdate(this, this, deliveringTruck,
-				deliveryTime);
-		commAPI.broadcast(update);
+		// TODO Move to timer?
+		PacketPing update = new PacketPing(this, deliveringTruck, deliveryTime);
+		transmit(update);
 	}
 
 	@Override
 	public void afterTick(TimeLapse timeLapse) {
+	}
+
+	private void updateBeliefs(Queue<Message> messages) {
+		for (Message message : messages) {
+			((PacketMessage) message).accept(this);
+		}
+	}
+
+	@Override
+	public void visitProposal(Proposal proposal) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
-	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
-		// TODO
+	public Vehicle getVehicle() {
+		return this.deliveringTruck;
+	}
+
+	/*
+	 * Communication
+	 */
+
+	protected void transmit(AbstractMessage<? extends Packet> message) {
+		message.transmit(commAPI);
 	}
 
 	// CommunicationUser
@@ -86,11 +109,10 @@ public class Packet extends Parcel implements CommunicationUser, TickListener {
 	public double getReliability() {
 		return settings.getCommunicationReliability();
 	}
-	
-	public Vehicle getVehicle()
-	{
-		return this.deliveringTruck;
+
+	@Override
+	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
+		// TODO
 	}
-	
 
 }

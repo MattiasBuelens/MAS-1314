@@ -2,13 +2,20 @@ package mas;
 
 import java.util.Queue;
 
+import mas.message.NewPacket;
+import mas.message.PacketPing;
+import mas.message.Reminder;
+import mas.message.TruckMessage;
+import mas.message.TruckMessageVisitor;
+
 import org.apache.commons.math3.random.RandomGenerator;
 
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Message;
 
-public class Truck extends BDIVehicle implements CommunicationUser {
+public class Truck extends BDIVehicle implements CommunicationUser,
+		TruckMessageVisitor {
 
 	private final SimulationSettings settings;
 
@@ -43,8 +50,29 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 
 	@Override
 	protected boolean updateBeliefs(Queue<Message> messages) {
-		// TODO Auto-generated method stub
+		for (Message message : messages) {
+			((TruckMessage) message).accept(this);
+		}
+		// TODO Return if should reconsider
 		return false;
+	}
+
+	@Override
+	public void visitNewPacket(NewPacket newPackage) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void visitReminder(Reminder reminder) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void visitPacketPing(PacketPing ping) {
+		// TODO Auto-generated method stub
+
 	}
 
 	@Override
