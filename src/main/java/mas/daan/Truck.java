@@ -105,7 +105,7 @@ public class Truck extends Vehicle implements MovingRoadUser, TickListener,  Com
 			Packet sender = reminder.getSender();
 			if (commitments.contains(sender))
 			{
-				Truck t = (Truck) sender.getVehicle();
+				Truck t = (Truck) sender.getDeliveringVehicle();
 				if (t != Truck.this)
 				{
 					commitments.remove(sender.getPosition());

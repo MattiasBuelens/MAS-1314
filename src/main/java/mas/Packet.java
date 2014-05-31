@@ -5,7 +5,7 @@ import java.util.Queue;
 import mas.message.AbstractMessage;
 import mas.message.PacketMessage;
 import mas.message.PacketMessageVisitor;
-import mas.message.PacketPing;
+import mas.message.Reminder;
 import mas.message.Proposal;
 import rinde.sim.core.TickListener;
 import rinde.sim.core.TimeLapse;
@@ -15,6 +15,7 @@ import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
 import rinde.sim.core.model.pdp.PDPModel;
+import rinde.sim.core.model.pdp.PDPModel.ParcelState;
 import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.core.model.road.RoadModel;
@@ -29,7 +30,7 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 	private final Mailbox mailbox = new Mailbox();
 
 	// Beliefs
-	private Vehicle deliveringTruck;
+	private Vehicle deliveringVehicle;
 	private long deliveryTime;
 
 	public Packet(Point pDestination, long pPickupDuration,
@@ -50,7 +51,7 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 
 		// Broadcast update
 		// TODO Move to timer?
-		PacketPing update = new PacketPing(this, deliveringTruck, deliveryTime);
+		Reminder update = new Reminder(this, getState(), getDeliveringVehicle(), getDeliveryTime());
 		transmit(update);
 	}
 
@@ -70,9 +71,18 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 
 	}
 
-	public Vehicle getVehicle() {
-		return this.deliveringTruck;
+	protected ParcelState getState() {
+		return getPDPModel().getParcelState(this);
 	}
+	
+	protected Vehicle getDeliveringVehicle() {
+		return deliveringVehicle;
+	}
+
+	protected long getDeliveryTime() {
+		return deliveryTime;
+	}
+
 
 	/*
 	 * Communication

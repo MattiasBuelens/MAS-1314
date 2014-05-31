@@ -78,8 +78,6 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 
 	protected abstract boolean isImpossible();
 
-	protected abstract boolean shouldReconsider();
-
 	protected abstract Plan<BDIVehicle> reconsider();
 
 	/*
