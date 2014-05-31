@@ -125,7 +125,7 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 	}
 
 	@Override
-	protected Plan<BDIVehicle> reconsider() {
+	protected Plan reconsider() {
 		// TODO Auto-generated method stub
 		return null;
 	}

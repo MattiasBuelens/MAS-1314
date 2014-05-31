@@ -8,11 +8,11 @@ import java.util.Queue;
 import mas.action.Action;
 import rinde.sim.core.TimeLapse;
 
-public class Plan<T> {
+public class Plan {
 
-	private final Queue<Action<T>> queue;
+	private final Queue<Action> queue;
 
-	public Plan(Collection<Action<T>> plan) {
+	public Plan(Collection<Action> plan) {
 		this.queue = new LinkedList<>(plan);
 	}
 
@@ -20,12 +20,12 @@ public class Plan<T> {
 		return queue.isEmpty();
 	}
 
-	public Collection<Action<T>> getSteps() {
+	public Collection<Action> getSteps() {
 		return Collections.unmodifiableCollection(queue);
 	}
 
-	public boolean step(T target, TimeLapse time) {
-		Action<T> step = queue.peek();
+	public boolean step(BDIVehicle target, TimeLapse time) {
+		Action step = queue.peek();
 		if (step != null) {
 			boolean stepDone = step.execute(target, time);
 			if (stepDone) {

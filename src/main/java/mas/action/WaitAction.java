@@ -1,12 +1,12 @@
 package mas.action;
 
-import rinde.sim.core.TimeLapse;
 import mas.BDIVehicle;
+import rinde.sim.core.TimeLapse;
 
 /**
  * Waits until the time is past a given time point.
  */
-public class WaitAction implements Action<BDIVehicle> {
+public class WaitAction implements Action {
 
 	private final long until;
 
@@ -22,6 +22,13 @@ public class WaitAction implements Action<BDIVehicle> {
 			time.consume(consumeTime);
 		}
 		return time.getTime() >= until;
+	}
+
+	@Override
+	public SimulationContext simulate(BDIVehicle target,
+			SimulationContext context) {
+		long newTime = Math.max(context.getTime(), until);
+		return context.next(newTime);
 	}
 
 }

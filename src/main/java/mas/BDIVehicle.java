@@ -1,10 +1,13 @@
 package mas;
 
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
 import javax.annotation.Nullable;
+
+import com.google.common.math.DoubleMath;
 
 import mas.message.AbstractMessage;
 import mas.timer.Timer;
@@ -27,7 +30,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 	private final Mailbox mailbox = new Mailbox();
 
 	@Nullable
-	private Plan<BDIVehicle> plan;
+	private Plan plan;
 
 	private final List<Timer> timers = new ArrayList<>();
 
@@ -64,7 +67,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		return getPlan() != null && !getPlan().isEmpty();
 	}
 
-	protected Plan<BDIVehicle> getPlan() {
+	protected Plan getPlan() {
 		return plan;
 	}
 
@@ -78,7 +81,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 
 	protected abstract boolean isImpossible();
 
-	protected abstract Plan<BDIVehicle> reconsider();
+	protected abstract Plan reconsider();
 
 	/*
 	 * Timers
@@ -129,12 +132,41 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		return getRoadModel().moveTo(this, destination, time);
 	}
 
+	public long getEstimatedTimeBetween(Point from, Point to) {
+		List<Point> path = getRoadModel().getShortestPathTo(from, to);
+		long duration = 0;
+		Point previous = null;
+
+		for (Point current : path) {
+			if (previous != null) {
+				duration += DoubleMath.roundToLong(
+						Point.distance(previous, current) / getSpeed(),
+						RoundingMode.HALF_DOWN);
+			}
+			previous = current;
+		}
+
+		return duration;
+	}
+
 	public void pickup(Parcel parcel, TimeLapse time) {
 		getPDPModel().pickup(this, parcel, time);
 	}
 
+	public boolean canPickupAt(Parcel parcel, long pickupTime) {
+		return getPDPModel().getTimeWindowPolicy().canPickup(
+				parcel.getPickupTimeWindow(), pickupTime,
+				parcel.getPickupDuration());
+	}
+
 	public void deliver(Parcel parcel, TimeLapse time) {
 		getPDPModel().deliver(this, parcel, time);
+	}
+
+	public boolean canDeliverAt(Parcel parcel, long deliveryTime) {
+		return getPDPModel().getTimeWindowPolicy().canDeliver(
+				parcel.getDeliveryTimeWindow(), deliveryTime,
+				parcel.getDeliveryDuration());
 	}
 
 	public boolean containsPacket(Parcel parcel) {
