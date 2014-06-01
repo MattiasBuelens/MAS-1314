@@ -9,13 +9,13 @@ import rinde.sim.core.model.pdp.Parcel;
 
 import com.google.common.collect.ImmutableSet;
 
-public class SimulationContext {
+public class SimulationState {
 
 	private final long time;
 	private final Point position;
 	private final ImmutableSet<Parcel> packets;
 
-	public SimulationContext(long time, Point position,
+	public SimulationState(long time, Point position,
 			Set<? extends Parcel> packets) {
 		this.time = time;
 		this.position = position;
@@ -34,23 +34,24 @@ public class SimulationContext {
 		return packets;
 	}
 
-	public SimulationContext next(long newTime) {
-		return next(newTime, getPosition());
+	public SimulationState nextState(long newTime) {
+		return nextState(newTime, getPosition());
 	}
 
-	public SimulationContext next(long newTime, Point newPosition) {
-		return next(newTime, newPosition, getPackets());
+	public SimulationState nextState(long newTime, Point newPosition) {
+		return nextState(newTime, newPosition, getPackets());
 	}
 
-	public SimulationContext next(long newTime, Set<? extends Parcel> newPackets) {
-		return next(newTime, getPosition(), newPackets);
+	public SimulationState nextState(long newTime,
+			Set<? extends Parcel> newPackets) {
+		return nextState(newTime, getPosition(), newPackets);
 	}
 
-	public SimulationContext next(long newTime, Point newPosition,
+	public SimulationState nextState(long newTime, Point newPosition,
 			Set<? extends Parcel> newPackets) {
 		checkArgument(newTime >= getTime(),
 				"New time must be after current time");
-		return new SimulationContext(newTime, newPosition, newPackets);
+		return new SimulationState(newTime, newPosition, newPackets);
 	}
 
 }

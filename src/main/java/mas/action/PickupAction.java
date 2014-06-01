@@ -24,17 +24,16 @@ public class PickupAction implements Action {
 	}
 
 	@Override
-	public SimulationContext simulate(BDIVehicle target,
-			SimulationContext context) {
-		long currentTime = context.getTime();
+	public SimulationState simulate(BDIVehicle target, SimulationState state) {
+		long currentTime = state.getTime();
 		checkState(target.canPickupAt(packet, currentTime),
 				"Cannot pick up at current simulated time.");
 
 		long newTime = currentTime + packet.getPickupDuration();
-		Set<Parcel> newPackets = new HashSet<>(context.getPackets());
+		Set<Parcel> newPackets = new HashSet<>(state.getPackets());
 		newPackets.add(packet);
 
-		return new SimulationContext(newTime, context.getPosition(), newPackets);
+		return new SimulationState(newTime, state.getPosition(), newPackets);
 	}
 
 }

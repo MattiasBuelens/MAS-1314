@@ -7,7 +7,6 @@ public interface Action {
 
 	public boolean execute(BDIVehicle target, TimeLapse time);
 
-	public SimulationContext simulate(BDIVehicle target,
-			SimulationContext context);
+	public SimulationState simulate(BDIVehicle target, SimulationState state);
 
 }

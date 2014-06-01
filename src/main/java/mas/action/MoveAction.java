@@ -19,12 +19,11 @@ public class MoveAction implements Action {
 	}
 
 	@Override
-	public SimulationContext simulate(BDIVehicle target,
-			SimulationContext context) {
-		long duration = target.getEstimatedTimeBetween(context.getPosition(),
+	public SimulationState simulate(BDIVehicle target, SimulationState state) {
+		long duration = target.getEstimatedTimeBetween(state.getPosition(),
 				destination);
-		long newTime = context.getTime() + duration;
-		return context.next(newTime, destination);
+		long newTime = state.getTime() + duration;
+		return state.nextState(newTime, destination);
 	}
 
 }

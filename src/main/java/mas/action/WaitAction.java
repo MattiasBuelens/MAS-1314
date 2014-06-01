@@ -25,10 +25,9 @@ public class WaitAction implements Action {
 	}
 
 	@Override
-	public SimulationContext simulate(BDIVehicle target,
-			SimulationContext context) {
-		long newTime = Math.max(context.getTime(), until);
-		return context.next(newTime);
+	public SimulationState simulate(BDIVehicle target, SimulationState state) {
+		long newTime = Math.max(state.getTime(), until);
+		return state.nextState(newTime);
 	}
 
 }

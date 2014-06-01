@@ -24,17 +24,16 @@ public class DeliverAction implements Action {
 	}
 
 	@Override
-	public SimulationContext simulate(BDIVehicle target,
-			SimulationContext context) {
-		long currentTime = context.getTime();
+	public SimulationState simulate(BDIVehicle target, SimulationState state) {
+		long currentTime = state.getTime();
 		checkState(target.canDeliverAt(packet, currentTime),
 				"Cannot deliver at current simulated time.");
 
 		long newTime = currentTime + packet.getDeliveryDuration();
-		Set<Parcel> newPackets = new HashSet<>(context.getPackets());
+		Set<Parcel> newPackets = new HashSet<>(state.getPackets());
 		newPackets.remove(packet);
 
-		return context.next(newTime, newPackets);
+		return state.nextState(newTime, newPackets);
 	}
 
 }
