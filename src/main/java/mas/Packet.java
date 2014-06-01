@@ -2,11 +2,20 @@ package mas;
 
 import java.util.Queue;
 
+import javax.measure.quantity.Duration;
+import javax.measure.quantity.Length;
+import javax.measure.unit.Unit;
+
 import mas.message.AbstractMessage;
 import mas.message.PacketMessage;
 import mas.message.PacketMessageVisitor;
-import mas.message.Reminder;
 import mas.message.Proposal;
+import mas.message.Reminder;
+
+import org.jscience.physics.amount.Amount;
+
+import rinde.sim.core.SimulatorAPI;
+import rinde.sim.core.SimulatorUser;
 import rinde.sim.core.TickListener;
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
@@ -22,11 +31,12 @@ import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.util.TimeWindow;
 
 public class Packet extends Parcel implements CommunicationUser, TickListener,
-		PacketMessageVisitor {
+		PacketMessageVisitor, SimulatorUser {
 
 	private final SimulationSettings settings;
 
 	private CommunicationAPI commAPI;
+	private SimulatorAPI simAPI;
 	private final Mailbox mailbox = new Mailbox();
 
 	// Beliefs
@@ -51,7 +61,8 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 
 		// Broadcast update
 		// TODO Move to timer?
-		Reminder update = new Reminder(this, getState(), getDeliveringVehicle(), getDeliveryTime());
+		Reminder update = new Reminder(this, getState(),
+				getDeliveringVehicle(), getDeliveryTime());
 		transmit(update);
 	}
 
@@ -74,7 +85,7 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 	protected ParcelState getState() {
 		return getPDPModel().getParcelState(this);
 	}
-	
+
 	protected Vehicle getDeliveringVehicle() {
 		return deliveringVehicle;
 	}
@@ -82,7 +93,6 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 	protected long getDeliveryTime() {
 		return deliveryTime;
 	}
-
 
 	/*
 	 * Communication
@@ -109,10 +119,13 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 		return getRoadModel().getPosition(this);
 	}
 
+	public Amount<Length> getRadiusAmount() {
+		return settings.getCommunicationRadius();
+	}
+
 	@Override
-	public double getRadius() {
-		return settings
-				.getCommunicationRadius(getRoadModel().getDistanceUnit());
+	public final double getRadius() {
+		return getRadiusAmount().doubleValue(getRoadModel().getDistanceUnit());
 	}
 
 	@Override
@@ -123,6 +136,15 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		// TODO
+	}
+
+	protected final Unit<Duration> getTickUnit() {
+		return simAPI.getTimeUnit();
+	}
+
+	@Override
+	public void setSimulator(SimulatorAPI api) {
+		simAPI = api;
 	}
 
 }

@@ -1,17 +1,24 @@
 package mas;
 
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
 import javax.annotation.Nullable;
-
-import com.google.common.math.DoubleMath;
+import javax.measure.quantity.Duration;
+import javax.measure.quantity.Length;
+import javax.measure.quantity.Velocity;
+import javax.measure.unit.Unit;
 
 import mas.message.AbstractMessage;
 import mas.timer.Timer;
 import mas.timer.TimerCallback;
+
+import org.apache.commons.math3.random.RandomGenerator;
+import org.jscience.physics.amount.Amount;
+
+import rinde.sim.core.SimulatorAPI;
+import rinde.sim.core.SimulatorUser;
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationAPI;
@@ -24,9 +31,11 @@ import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.core.model.road.MoveProgress;
 import rinde.sim.core.model.road.RoadModel;
 
-public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
+public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
+		SimulatorUser {
 
 	private CommunicationAPI commAPI;
+	private SimulatorAPI simAPI;
 	private final Mailbox mailbox = new Mailbox();
 
 	@Nullable
@@ -133,20 +142,27 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 	}
 
 	public long getEstimatedTimeBetween(Point from, Point to) {
+		Amount<Length> distance = getDistanceBetween(from, to);
+		Amount<Duration> duration = distance.divide(getSpeedAmount()).to(
+				getTickUnit());
+		return duration.longValue(getTickUnit());
+	}
+
+	public Amount<Length> getDistanceBetween(Point from, Point to) {
 		List<Point> path = getRoadModel().getShortestPathTo(from, to);
-		long duration = 0;
+		Unit<Length> unit = getRoadModel().getDistanceUnit();
+		Amount<Length> distance = Amount.valueOf(0d, unit);
 		Point previous = null;
 
 		for (Point current : path) {
 			if (previous != null) {
-				duration += DoubleMath.roundToLong(
-						Point.distance(previous, current) / getSpeed(),
-						RoundingMode.HALF_DOWN);
+				distance = distance.plus(Amount.valueOf(
+						Point.distance(previous, current), unit));
 			}
 			previous = current;
 		}
 
-		return duration;
+		return distance;
 	}
 
 	public void pickup(Parcel parcel, TimeLapse time) {
@@ -183,6 +199,20 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 		commAPI = api;
 	}
 
+	public abstract Amount<Length> getRadiusAmount();
+
+	@Override
+	public final double getRadius() {
+		return getRadiusAmount().doubleValue(getRoadModel().getDistanceUnit());
+	}
+
+	public abstract Amount<Velocity> getSpeedAmount();
+
+	@Override
+	public final double getSpeed() {
+		return getSpeedAmount().doubleValue(getRoadModel().getSpeedUnit());
+	}
+
 	@Override
 	public Point getPosition() {
 		return getRoadModel().getPosition(this);
@@ -190,6 +220,19 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser {
 
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
+	}
+
+	protected final RandomGenerator getRandomGenerator() {
+		return simAPI.getRandomGenerator();
+	}
+
+	protected final Unit<Duration> getTickUnit() {
+		return simAPI.getTimeUnit();
+	}
+
+	@Override
+	public void setSimulator(SimulatorAPI api) {
+		simAPI = api;
 	}
 
 }

@@ -11,6 +11,7 @@ import javax.measure.unit.SI;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.jscience.physics.amount.Amount;
 
 import rinde.sim.core.Simulator;
 import rinde.sim.core.graph.Graph;
@@ -33,14 +34,14 @@ public class PDP {
 	/**
 	 * Speed, in kilometers per hour.
 	 */
-	private static final Measure<Double, Velocity> VEHICLE_SPEED = Measure
-			.valueOf(50d, NonSI.KILOMETERS_PER_HOUR);
+	private static final Amount<Velocity> VEHICLE_SPEED = Amount.valueOf(50d,
+			NonSI.KILOMETERS_PER_HOUR);
 
 	/**
 	 * Communication radius, in kilometers.
 	 */
-	private static final Measure<Double, Length> COMMUNICATION_RADIUS = Measure
-			.valueOf(10d, SI.KILOMETER);
+	private static final Amount<Length> COMMUNICATION_RADIUS = Amount.valueOf(
+			10d, SI.KILOMETER);
 
 	/**
 	 * Communication reliability, between 0.0 and 1.0.
@@ -72,7 +73,7 @@ public class PDP {
 				SI.MILLI(SI.SECOND)));
 
 		final SimulationSettings settings = SimulationSettings.builder()
-				.setRandomGenerator(rnd).setTruckSpeed(VEHICLE_SPEED)
+				.setTruckSpeed(VEHICLE_SPEED)
 				.setCommunicationRadius(COMMUNICATION_RADIUS)
 				.setCommunicationReliability(COMMUNICATION_RELIABILITY).build();
 

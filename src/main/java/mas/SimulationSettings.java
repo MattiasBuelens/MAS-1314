@@ -2,48 +2,37 @@ package mas;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import javax.measure.Measure;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
 
-import org.apache.commons.math3.random.RandomGenerator;
+import org.jscience.physics.amount.Amount;
 
 public class SimulationSettings {
 
-	private final RandomGenerator randomGenerator;
-	private final Measure<? extends Number, Velocity> truckSpeed;
-	private final Measure<? extends Number, Length> communicationRadius;
+	private final Amount<Velocity> truckSpeed;
+	private final Amount<Length> communicationRadius;
 	private final double communicationReliability;
 
 	private SimulationSettings(Builder builder) {
-		this.randomGenerator = checkNotNull(builder.randomGenerator);
 		this.truckSpeed = checkNotNull(builder.truckSpeed);
 		this.communicationRadius = checkNotNull(builder.communicationRadius);
 		this.communicationReliability = builder.communicationReliability;
 	}
 
 	/**
-	 * Get the random generator.
-	 */
-	public RandomGenerator getRandomGenerator() {
-		return randomGenerator;
-	}
-
-	/**
 	 * Get the speed of a truck.
 	 */
-	public double getTruckSpeed(Unit<Velocity> unit) {
-		return truckSpeed.doubleValue(unit);
+	public Amount<Velocity> getTruckSpeed() {
+		return truckSpeed;
 	}
 
 	/**
 	 * Get the communication range of an agent.
 	 */
-	public double getCommunicationRadius(Unit<Length> unit) {
-		return communicationRadius.doubleValue(unit);
+	public Amount<Length> getCommunicationRadius() {
+		return communicationRadius;
 	}
 
 	/**
@@ -60,28 +49,21 @@ public class SimulationSettings {
 
 	public static class Builder {
 
-		private RandomGenerator randomGenerator;
-		private Measure<? extends Number, Velocity> truckSpeed = Measure
-				.valueOf(50d, NonSI.KILOMETRES_PER_HOUR);
-		private Measure<? extends Number, Length> communicationRadius = Measure
-				.valueOf(10d, SI.KILOMETRE);
+		private Amount<Velocity> truckSpeed = Amount.valueOf(50d,
+				NonSI.KILOMETRES_PER_HOUR);
+		private Amount<Length> communicationRadius = Amount.valueOf(10d,
+				SI.KILOMETRE);
 		private double communicationReliability = 1.0d;
 
 		protected Builder() {
 		}
 
-		public Builder setRandomGenerator(RandomGenerator randomGenerator) {
-			this.randomGenerator = randomGenerator;
-			return this;
-		}
-
-		public Builder setTruckSpeed(Measure<? extends Number, Velocity> speed) {
+		public Builder setTruckSpeed(Amount<Velocity> speed) {
 			this.truckSpeed = speed;
 			return this;
 		}
 
-		public Builder setCommunicationRadius(
-				Measure<? extends Number, Length> radius) {
+		public Builder setCommunicationRadius(Amount<Length> radius) {
 			this.communicationRadius = radius;
 			return this;
 		}
