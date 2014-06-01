@@ -17,6 +17,8 @@ import mas.timer.TimerCallback;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jscience.physics.amount.Amount;
 
+import com.google.common.collect.ImmutableSet;
+
 import rinde.sim.core.SimulatorAPI;
 import rinde.sim.core.SimulatorUser;
 import rinde.sim.core.TimeLapse;
@@ -49,12 +51,12 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 		Queue<Message> messages = mailbox.getMessages();
 
 		// Update beliefs
-		boolean shouldReconsider = updateBeliefs(messages);
+		boolean shouldReconsider = updateBeliefs(messages, time.getTime());
 
 		do {
 			if (!hasPlan() || shouldReconsider) {
 				// Update desires + intentions + plan
-				plan = reconsider();
+				plan = reconsider(time.getTime());
 			}
 			if (hasValidPlan()) {
 				getPlan().step(this, time);
@@ -84,13 +86,13 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 		return hasPlan() && !isSucceeded() && !isImpossible();
 	}
 
-	protected abstract boolean updateBeliefs(Queue<Message> messages);
+	protected abstract boolean updateBeliefs(Queue<Message> messages, long time);
 
 	protected abstract boolean isSucceeded();
 
 	protected abstract boolean isImpossible();
 
-	protected abstract Plan reconsider();
+	protected abstract Plan reconsider(long time);
 
 	/*
 	 * Timers
@@ -187,6 +189,10 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 
 	public boolean containsPacket(Parcel parcel) {
 		return getPDPModel().containerContains(this, parcel);
+	}
+	
+	public ImmutableSet<Parcel> getContainedPackets() {
+		return getPDPModel().getContents(this);
 	}
 
 	@Override

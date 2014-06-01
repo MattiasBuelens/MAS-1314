@@ -1,7 +1,5 @@
 package mas.action;
 
-import static com.google.common.base.Preconditions.checkState;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,16 +22,19 @@ public class PickupAction implements Action {
 	}
 
 	@Override
-	public SimulationState simulate(BDIVehicle target, SimulationState state) {
+	public SimulationState simulate(BDIVehicle target, SimulationState state)
+			throws IllegalActionException {
 		long currentTime = state.getTime();
-		checkState(target.canPickupAt(packet, currentTime),
-				"Cannot pick up at current simulated time.");
+		if (!target.canPickupAt(packet, currentTime)) {
+			throw new IllegalActionException(
+					"Cannot pick up at current simulated time.");
+		}
 
 		long newTime = currentTime + packet.getPickupDuration();
-		Set<Parcel> newPackets = new HashSet<>(state.getPackets());
-		newPackets.add(packet);
+		Set<Parcel> newPickedUp = new HashSet<>(state.getPickedUp());
+		newPickedUp.add(packet);
 
-		return new SimulationState(newTime, state.getPosition(), newPackets);
+		return state.nextState(newTime, newPickedUp);
 	}
 
 }

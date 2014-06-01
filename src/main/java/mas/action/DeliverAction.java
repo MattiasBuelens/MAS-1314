@@ -1,7 +1,5 @@
 package mas.action;
 
-import static com.google.common.base.Preconditions.checkState;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,8 +11,8 @@ public class DeliverAction implements Action {
 
 	private final Parcel packet;
 
-	public DeliverAction(Parcel parcel) {
-		this.packet = parcel;
+	public DeliverAction(Parcel packet) {
+		this.packet = packet;
 	}
 
 	@Override
@@ -24,16 +22,21 @@ public class DeliverAction implements Action {
 	}
 
 	@Override
-	public SimulationState simulate(BDIVehicle target, SimulationState state) {
+	public SimulationState simulate(BDIVehicle target, SimulationState state)
+			throws IllegalActionException {
 		long currentTime = state.getTime();
-		checkState(target.canDeliverAt(packet, currentTime),
-				"Cannot deliver at current simulated time.");
+		if (!target.canDeliverAt(packet, currentTime)) {
+			throw new IllegalActionException(
+					"Cannot deliver at current simulated time.");
+		}
 
 		long newTime = currentTime + packet.getDeliveryDuration();
-		Set<Parcel> newPackets = new HashSet<>(state.getPackets());
-		newPackets.remove(packet);
+		Set<Parcel> newPickedUp = new HashSet<>(state.getPickedUp());
+		Set<Parcel> newDelivered = new HashSet<>(state.getDelivered());
+		newPickedUp.remove(packet);
+		newDelivered.add(packet);
 
-		return state.nextState(newTime, newPackets);
+		return state.nextState(newTime, newPickedUp, newDelivered);
 	}
 
 }
