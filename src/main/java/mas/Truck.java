@@ -4,18 +4,23 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 
+import mas.action.ActionFailedException;
 import mas.action.DeliverAction;
+import mas.action.DeliverFailedException;
 import mas.action.IllegalActionException;
 import mas.action.MoveAction;
 import mas.action.PickupAction;
+import mas.action.PickupFailedException;
 import mas.action.SimulationState;
 import mas.action.WaitAction;
 import mas.message.NewPacket;
@@ -37,6 +42,11 @@ import com.google.common.collect.Iterables;
 public class Truck extends BDIVehicle implements CommunicationUser {
 
 	private final SimulationSettings settings;
+
+	/**
+	 * Information received from packets.
+	 */
+	private Map<Packet, PacketInfo> packetInfo = new HashMap<>();
 
 	/**
 	 * Packets this truck may consider to pick up and deliver.
@@ -107,11 +117,13 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 
 		@Override
 		public void visitReminder(Reminder reminder) {
-			// Commitment reminder from packet
-			// TODO waarom werkt dit niet?
+			// Reminder from packet
 			Packet packet = reminder.getSender();
+			PacketInfo info = reminder.getInfo();
+			// Store updated info
+			packetInfo.put(packet, info);
 			if (intentions.contains(packet)) {
-				if (!this.equals(reminder.getDeliveringTruck())) {
+				if (!this.equals(info.getDeliveringTruck())) {
 					intentions.remove(packet);
 					packagesLost = true;
 				}
@@ -147,6 +159,19 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	protected boolean isImpossible() {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	protected void handleActionFailed(ActionFailedException e) {
+		if (e instanceof PickupFailedException) {
+			// Pick up failed, drop intention
+			Packet packet = ((PickupFailedException) e).getPacket();
+			intentions.remove(packet);
+		} else if (e instanceof DeliverFailedException) {
+			// Delivery failed, drop intention
+			Packet packet = ((DeliverFailedException) e).getPacket();
+			intentions.remove(packet);
+		}
 	}
 
 	@Override
@@ -305,12 +330,10 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 
 	private PlanBuilder planPickup(PlanBuilder plan, Packet packet,
 			boolean allowWait) throws IllegalActionException {
-		if (!plan.getState().getPosition().equals(packet.getPosition())) {
-			// Move to packet position
-			plan = plan.nextAction(this, new MoveAction(packet.getPosition()));
-		}
-		if (!canPickupAt(packet, plan.getState().getTime()) && allowWait) {
-			// Wait for pickup begin time
+		// Move to packet position
+		plan = plan.nextAction(this, new MoveAction(packet.getPosition()));
+		// Wait for pickup begin time
+		if (allowWait) {
 			plan = plan.nextAction(this,
 					new WaitAction(packet.getPickupTimeWindow().begin));
 		}
@@ -321,13 +344,10 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 
 	private PlanBuilder planDelivery(PlanBuilder plan, Packet packet,
 			boolean allowWait) throws IllegalActionException {
-		if (!plan.getState().getPosition().equals(packet.getDestination())) {
-			// Move to packet destination
-			plan = plan.nextAction(this,
-					new MoveAction(packet.getDestination()));
-		}
-		if (!canDeliverAt(packet, plan.getState().getTime()) && allowWait) {
-			// Wait for delivery begin time
+		// Move to packet destination
+		plan = plan.nextAction(this, new MoveAction(packet.getDestination()));
+		// Wait for delivery begin time
+		if (allowWait) {
 			plan = plan.nextAction(this,
 					new WaitAction(packet.getDeliveryTimeWindow().begin));
 		}

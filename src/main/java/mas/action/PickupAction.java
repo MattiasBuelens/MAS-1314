@@ -16,8 +16,13 @@ public class PickupAction implements Action {
 	}
 
 	@Override
-	public boolean execute(BDIVehicle target, TimeLapse time) {
-		target.pickup(packet, time);
+	public boolean execute(BDIVehicle target, TimeLapse time)
+			throws ActionFailedException {
+		try {
+			target.pickup(packet, time);
+		} catch (Exception e) {
+			throw new PickupFailedException(packet, e);
+		}
 		return target.containsParcel(packet);
 	}
 

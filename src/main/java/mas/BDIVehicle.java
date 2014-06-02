@@ -10,6 +10,7 @@ import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.Unit;
 
+import mas.action.ActionFailedException;
 import mas.message.AbstractMessage;
 import mas.timer.Timer;
 import mas.timer.TimerCallback;
@@ -59,7 +60,12 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 				plan = reconsider(time.getTime());
 			}
 			if (hasValidPlan()) {
-				getPlan().step(this, time);
+				try {
+					getPlan().step(this, time);
+				} catch (ActionFailedException e) {
+					plan = null;
+					handleActionFailed(e);
+				}
 				if (!hasValidPlan()) {
 					plan = null;
 				}
@@ -93,6 +99,8 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 	protected abstract boolean isImpossible();
 
 	protected abstract Plan reconsider(long time);
+
+	protected abstract void handleActionFailed(ActionFailedException e);
 
 	/*
 	 * Timers

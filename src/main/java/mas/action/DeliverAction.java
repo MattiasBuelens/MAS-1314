@@ -16,8 +16,13 @@ public class DeliverAction implements Action {
 	}
 
 	@Override
-	public boolean execute(BDIVehicle target, TimeLapse time) {
-		target.deliver(packet, time);
+	public boolean execute(BDIVehicle target, TimeLapse time)
+			throws ActionFailedException {
+		try {
+			target.deliver(packet, time);
+		} catch (Exception e) {
+			throw new DeliverFailedException(packet, e);
+		}
 		return !target.containsParcel(packet);
 	}
 

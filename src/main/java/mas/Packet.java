@@ -2,42 +2,32 @@ package mas;
 
 import java.util.Queue;
 
-import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
-import javax.measure.unit.Unit;
 
 import mas.message.AbstractMessage;
+import mas.message.NewPacket;
 import mas.message.PacketMessage;
 import mas.message.PacketMessageVisitor;
 import mas.message.Proposal;
 import mas.message.Reminder;
+import mas.timer.Timer;
+import mas.timer.TimerCallback;
 
 import org.jscience.physics.amount.Amount;
 
-import rinde.sim.core.SimulatorAPI;
 import rinde.sim.core.SimulatorUser;
 import rinde.sim.core.TickListener;
-import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
-import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.CommunicationUser;
-import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
-import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.pdp.PDPModel.ParcelState;
-import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.pdp.Vehicle;
-import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.util.TimeWindow;
 
-public class Packet extends Parcel implements CommunicationUser, TickListener,
-		PacketMessageVisitor, SimulatorUser {
+public class Packet extends BDIParcel implements CommunicationUser,
+		TickListener, PacketMessageVisitor, SimulatorUser {
 
 	private final SimulationSettings settings;
-
-	private CommunicationAPI commAPI;
-	private SimulatorAPI simAPI;
-	private final Mailbox mailbox = new Mailbox();
 
 	// Beliefs
 	private Vehicle deliveringVehicle;
@@ -51,26 +41,33 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 		this.settings = settings;
 	}
 
-	@Override
-	public void tick(TimeLapse timeLapse) {
-		// Read messages
-		Queue<Message> messages = mailbox.getMessages();
+	protected Vehicle getDeliveringVehicle() {
+		if (getState().isDelivered()) {
+			// Already delivered
+			return null;
+		} else if (isPickingUp()) {
+			// Picked up
+			return getContainingVehicle();
+		} else {
+			// Awaiting pickup
+			return deliveringVehicle;
+		}
+	}
 
-		// Update beliefs
-		updateBeliefs(messages);
+	protected long getDeliveryTime() {
+		return deliveryTime;
+	}
 
-		// Broadcast update
-		// TODO Move to timer?
-		Reminder update = new Reminder(this, getState(),
-				getDeliveringVehicle(), getDeliveryTime());
-		transmit(update);
+	protected boolean needsAssignment() {
+		return !isPickingUp() && getDeliveringVehicle() == null;
+	}
+
+	protected boolean isPickingUp() {
+		return getState().isPickedUp() || getState() == ParcelState.PICKING_UP;
 	}
 
 	@Override
-	public void afterTick(TimeLapse timeLapse) {
-	}
-
-	private void updateBeliefs(Queue<Message> messages) {
+	protected void updateBeliefs(Queue<Message> messages) {
 		for (Message message : messages) {
 			((PacketMessage) message).accept(this);
 		}
@@ -78,54 +75,51 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 
 	@Override
 	public void visitProposal(Proposal proposal) {
-		// TODO Auto-generated method stub
+		// Ignore if already (being) picked up
+		if (isPickingUp())
+			return;
 
-	}
-
-	protected ParcelState getState() {
-		return getPDPModel().getParcelState(this);
-	}
-
-	protected Vehicle getDeliveringVehicle() {
-		return deliveringVehicle;
-	}
-
-	protected long getDeliveryTime() {
-		return deliveryTime;
-	}
-
-	/*
-	 * Communication
-	 */
-
-	protected void transmit(AbstractMessage<? extends Packet> message) {
-		message.transmit(commAPI);
-	}
-
-	// CommunicationUser
-
-	@Override
-	public void receive(Message message) {
-		mailbox.receive(message);
+		// Set delivering vehicle if better time
+		if (proposal.getDeliveryTime() < getDeliveryTime()) {
+			deliveringVehicle = proposal.getSender();
+			deliveryTime = proposal.getDeliveryTime();
+		}
 	}
 
 	@Override
-	public void setCommunicationAPI(CommunicationAPI api) {
-		this.commAPI = api;
+	protected void initialize() {
+		super.initialize();
+		// Schedule broadcast timer
+		addTimer(0l, new BroadcastUpdateCallback());
+	}
+
+	protected void broadcastUpdate() {
+		AbstractMessage<Packet> update;
+		if (needsAssignment()) {
+			// Request assignment
+			update = new NewPacket(this);
+		} else {
+			// Remind commitment
+			PacketInfo info = new PacketInfo(this, getState(),
+					getDeliveringVehicle(), getDeliveryTime());
+			update = new Reminder(this, info);
+		}
+		transmit(update);
+	}
+
+	private class BroadcastUpdateCallback implements TimerCallback {
+		@Override
+		public void onTimer(Timer timer, long currentTime) {
+			// Send update
+			broadcastUpdate();
+			// Repeat timer
+			timer.schedule(currentTime + getBroadcastPeriod());
+		}
 	}
 
 	@Override
-	public Point getPosition() {
-		return getRoadModel().getPosition(this);
-	}
-
 	public Amount<Length> getRadiusAmount() {
 		return settings.getCommunicationRadius();
-	}
-
-	@Override
-	public final double getRadius() {
-		return getRadiusAmount().doubleValue(getRoadModel().getDistanceUnit());
 	}
 
 	@Override
@@ -133,18 +127,8 @@ public class Packet extends Parcel implements CommunicationUser, TickListener,
 		return settings.getCommunicationReliability();
 	}
 
-	@Override
-	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
-		// TODO
-	}
-
-	protected final Unit<Duration> getTickUnit() {
-		return simAPI.getTimeUnit();
-	}
-
-	@Override
-	public void setSimulator(SimulatorAPI api) {
-		simAPI = api;
+	protected final long getBroadcastPeriod() {
+		return settings.getPacketBroadcastPeriod().longValue(getTickUnit());
 	}
 
 }

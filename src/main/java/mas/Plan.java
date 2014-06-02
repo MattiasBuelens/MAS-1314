@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import mas.action.Action;
+import mas.action.ActionFailedException;
 import rinde.sim.core.TimeLapse;
 
 public class Plan {
@@ -24,7 +25,7 @@ public class Plan {
 		return Collections.unmodifiableCollection(queue);
 	}
 
-	public boolean step(BDIVehicle target, TimeLapse time) {
+	public boolean step(BDIVehicle target, TimeLapse time) throws ActionFailedException {
 		Action step = queue.peek();
 		if (step != null) {
 			boolean stepDone = step.execute(target, time);
