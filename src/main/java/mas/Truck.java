@@ -1,5 +1,7 @@
 package mas;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -110,8 +112,7 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 			} else {
 				// Add to desires
 				// TODO beslissen of we dit in de pool steken of niet: enkel
-				// nieuwe
-				// packages overwegen/niet?
+				// nieuwe packages overwegen/niet?
 				desires.add(packet);
 				newDesires.remove(packet);
 			}
@@ -144,22 +145,86 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 
 	@Override
 	protected Plan reconsider(long time) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	private Plan nearestNeighbour(ImmutableSet<? extends Parcel> packets,
-			long time) {
 		// Initialize from actual truck state
 		SimulationState startState = new SimulationState(time, getPosition(),
 				getContainedPackets());
-		PlanBuilder plan = new PlanBuilder(startState);
 
-		// Find path for all packets
-		return nearestNeighbour(plan, packets);
+		// Make plan with current intentions
+		PlanBuilder plan = nearestNeighbour(startState,
+				ImmutableSet.copyOf(intentions));
+		checkState(plan != null, "Truck has no plan for its current intentions");
+
+		// Add intentions from new packages
+		PlanBuilder newPlan = selectIntentions(startState, newDesires);
+		if (newPlan != null) {
+			plan = newPlan;
+		}
+
+		// Add intentions from old packages
+		// TODO When should we do this?
+		newPlan = selectIntentions(startState, desires);
+		if (newPlan != null) {
+			plan = newPlan;
+		}
+
+		return plan.build();
 	}
 
-	private Plan nearestNeighbour(PlanBuilder plan,
+	private PlanBuilder selectIntentions(SimulationState startState,
+			Set<Packet> desires) {
+		PlanBuilder bestPlan = null;
+
+		// TODO Adjust the stop condition?
+		while (!desires.isEmpty()) {
+			List<Packet> impossibleDesires = new ArrayList<>();
+			Packet bestDesire = null;
+			long bestTotalTime = Long.MAX_VALUE;
+
+			// Make plans for all desires
+			for (Packet desire : desires) {
+				// Make a plan with the current intentions and this desire
+				ImmutableSet<Packet> newIntentions = ImmutableSet
+						.<Packet> builder().addAll(intentions).add(desire)
+						.build();
+				PlanBuilder newPlan = nearestNeighbour(startState,
+						newIntentions);
+				if (newPlan == null) {
+					// No possible plan with this desire
+					// Mark for removal
+					impossibleDesires.add(desire);
+				} else {
+					// Check if better total time
+					long totalTime = newPlan.getState().getTime();
+					if (totalTime < bestTotalTime) {
+						bestDesire = desire;
+						bestTotalTime = totalTime;
+						bestPlan = newPlan;
+					}
+				}
+			}
+
+			// Remove impossible desires
+			desires.removeAll(impossibleDesires);
+
+			if (bestDesire == null) {
+				// No additional desire can be added
+				break;
+			} else {
+				// Add to intentions
+				desires.remove(bestDesire);
+				intentions.add(bestDesire);
+			}
+		}
+
+		return bestPlan;
+	}
+
+	private PlanBuilder nearestNeighbour(SimulationState startState,
+			ImmutableSet<? extends Parcel> packets) {
+		return nearestNeighbour(new PlanBuilder(startState), packets);
+	}
+
+	private PlanBuilder nearestNeighbour(PlanBuilder plan,
 			ImmutableSet<? extends Parcel> packets) {
 		List<PacketTask> tasks = getNextTasks(plan.getState(), packets);
 
@@ -179,7 +244,7 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 			tasks = getNextTasks(plan.getState(), packets);
 		}
 
-		return plan.build();
+		return plan;
 	}
 
 	private List<PacketTask> getNextTasks(SimulationState state,

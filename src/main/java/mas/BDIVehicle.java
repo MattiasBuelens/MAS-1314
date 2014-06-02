@@ -122,9 +122,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 			}
 		}
 		// Remove timers
-		for (Timer timer : toRemove) {
-			timers.remove(timer);
-		}
+		timers.removeAll(toRemove);
 	}
 
 	/*
