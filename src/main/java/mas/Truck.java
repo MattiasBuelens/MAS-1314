@@ -28,6 +28,7 @@ import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Message;
 import rinde.sim.core.model.pdp.Parcel;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 
 public class Truck extends BDIVehicle implements CommunicationUser {
@@ -256,6 +257,17 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 		// Deliver
 		plan = plan.nextAction(this, new DeliverAction(packet));
 		return plan;
+	}
+
+	private long getPlannedDeliveryTime(PlanBuilder plan, final Parcel packet) {
+		PlanBuilder deliveryPlan = plan
+				.findOldest(new Predicate<PlanBuilder>() {
+					@Override
+					public boolean apply(PlanBuilder input) {
+						return input.getState().isDelivered(packet);
+					}
+				});
+		return deliveryPlan.getState().getTime();
 	}
 
 }

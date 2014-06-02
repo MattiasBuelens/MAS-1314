@@ -10,6 +10,8 @@ import mas.action.Action;
 import mas.action.IllegalActionException;
 import mas.action.SimulationState;
 
+import com.google.common.base.Predicate;
+
 @Immutable
 public class PlanBuilder {
 
@@ -36,10 +38,12 @@ public class PlanBuilder {
 		return state;
 	}
 
-	public PlanBuilder nextAction(BDIVehicle target, Action action) throws IllegalActionException {
+	public PlanBuilder nextAction(BDIVehicle target, Action action)
+			throws IllegalActionException {
 		checkNotNull(target);
 		checkNotNull(action);
-		return new PlanBuilder(this, action, action.simulate(target, state));
+		return new PlanBuilder(this, action,
+				action.simulate(target, getState()));
 	}
 
 	public Plan build() {
@@ -50,6 +54,32 @@ public class PlanBuilder {
 			cursor = cursor.previous;
 		}
 		return new Plan(actions);
+	}
+
+	public PlanBuilder findNewest(Predicate<? super PlanBuilder> predicate) {
+		checkNotNull(predicate);
+		// Rewind until predicate succeeds
+		PlanBuilder cursor = this;
+		do {
+			if (predicate.apply(cursor)) {
+				return cursor;
+			}
+			cursor = cursor.previous;
+		} while (cursor.previous != null);
+		return null;
+	}
+
+	public PlanBuilder findOldest(Predicate<? super PlanBuilder> predicate) {
+		checkNotNull(predicate);
+		// Rewind until predicate succeeds
+		PlanBuilder oldest = findNewest(predicate);
+		if (oldest == null)
+			return null;
+		// Rewind until predicate fails or fully rewinded
+		while (oldest.previous != null && predicate.apply(oldest.previous)) {
+			oldest = oldest.previous;
+		}
+		return oldest;
 	}
 
 }
