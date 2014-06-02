@@ -19,6 +19,7 @@ import mas.action.PickupAction;
 import mas.action.SimulationState;
 import mas.action.WaitAction;
 import mas.message.NewPacket;
+import mas.message.Proposal;
 import mas.message.Reminder;
 import mas.message.TruckMessage;
 import mas.message.TruckMessageVisitor;
@@ -172,12 +173,19 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 			plan = newPlan;
 		}
 
+		// Send updated proposals to all intentions
+		sendProposals(plan);
+
+		// Build the plan
 		return plan.build();
 	}
 
 	private PlanBuilder selectIntentions(SimulationState startState,
 			Set<Packet> desires) {
 		PlanBuilder bestPlan = null;
+
+		// Remove desires that are already intentions
+		desires.removeAll(intentions);
 
 		// TODO Adjust the stop condition?
 		while (!desires.isEmpty()) {
@@ -326,6 +334,14 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 		// Deliver
 		plan = plan.nextAction(this, new DeliverAction(packet));
 		return plan;
+	}
+
+	private void sendProposals(PlanBuilder plan) {
+		for (Packet packet : plan.getState().getDelivered()) {
+			long deliveryTime = getPlannedDeliveryTime(plan, packet);
+			Proposal proposal = new Proposal(this, packet, deliveryTime);
+			transmit(proposal);
+		}
 	}
 
 	private long getPlannedDeliveryTime(PlanBuilder plan, final Packet packet) {

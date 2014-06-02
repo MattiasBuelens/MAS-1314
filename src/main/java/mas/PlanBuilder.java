@@ -60,26 +60,23 @@ public class PlanBuilder {
 		checkNotNull(predicate);
 		// Rewind until predicate succeeds
 		PlanBuilder cursor = this;
-		do {
-			if (predicate.apply(cursor)) {
-				return cursor;
-			}
+		while (cursor != null && !predicate.apply(cursor)) {
 			cursor = cursor.previous;
-		} while (cursor.previous != null);
-		return null;
+		}
+		return cursor;
 	}
 
 	public PlanBuilder findOldest(Predicate<? super PlanBuilder> predicate) {
 		checkNotNull(predicate);
 		// Rewind until predicate succeeds
-		PlanBuilder oldest = findNewest(predicate);
-		if (oldest == null)
+		PlanBuilder cursor = findNewest(predicate);
+		if (cursor == null)
 			return null;
 		// Rewind until predicate fails or fully rewinded
-		while (oldest.previous != null && predicate.apply(oldest.previous)) {
-			oldest = oldest.previous;
+		while (cursor.previous != null && predicate.apply(cursor.previous)) {
+			cursor = cursor.previous;
 		}
-		return oldest;
+		return cursor;
 	}
 
 }

@@ -6,19 +6,19 @@ import mas.Truck;
 public class Proposal extends UnicastMessage<Truck, Packet> implements
 		PacketMessage {
 
-	private long ETA;
+	private long deliveryTime;
 
-	public Proposal(Truck sender, Packet packet, long ETA) {
+	public Proposal(Truck sender, Packet packet, long deliveryTime) {
 		super(sender, packet);
-		this.ETA = ETA;
+		this.deliveryTime = deliveryTime;
 	}
 
 	public Packet getPacket() {
 		return getRecipient();
 	}
 
-	public long getETA() {
-		return ETA;
+	public long getDeliveryTime() {
+		return deliveryTime;
 	}
 
 	@Override
