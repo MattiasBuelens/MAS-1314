@@ -217,7 +217,7 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 			boolean allowWait) {
 		for (PacketTask task : tasks) {
 			try {
-				return planTask(plan, task, true);
+				return planTask(plan, task, allowWait);
 			} catch (IllegalActionException e) {
 				// No plan, continue with next task
 			}
