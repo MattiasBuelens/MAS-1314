@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import javax.measure.Measure;
+import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.NonSI;
@@ -48,6 +49,18 @@ public class PDP {
 	 */
 	private static final double COMMUNICATION_RELIABILITY = 0.75d;
 
+	/**
+	 * Tick duration, in milliseconds.
+	 */
+	private static final Amount<Duration> TICK_DURATION = Amount.valueOf(1000l,
+			SI.MILLI(SI.SECOND));
+
+	/**
+	 * Packet broadcast period, in seconds.
+	 */
+	private static final Amount<Duration> PACKET_BROADCAST_PERIOD = Amount
+			.valueOf(5l, SI.SECOND);
+
 	private static final String MAP_FILE = "/data/maps/leuven-simple.dot";
 
 	private PDP() {
@@ -69,13 +82,14 @@ public class PDP {
 		final RandomGenerator rnd = new MersenneTwister(123);
 
 		// initialize a new Simulator instance
-		final Simulator sim = new Simulator(rnd, Measure.valueOf(1000L,
-				SI.MILLI(SI.SECOND)));
+		final Simulator sim = new Simulator(rnd, Measure.valueOf(
+				TICK_DURATION.getExactValue(), TICK_DURATION.getUnit()));
 
 		final SimulationSettings settings = SimulationSettings.builder()
 				.setTruckSpeed(VEHICLE_SPEED)
 				.setCommunicationRadius(COMMUNICATION_RADIUS)
-				.setCommunicationReliability(COMMUNICATION_RELIABILITY).build();
+				.setCommunicationReliability(COMMUNICATION_RELIABILITY)
+				.setPacketBroadcastPeriod(PACKET_BROADCAST_PERIOD).build();
 
 		RoadModel roadModel = new GraphRoadModel(loadGraph(MAP_FILE),
 				SI.KILOMETER, NonSI.KILOMETERS_PER_HOUR);

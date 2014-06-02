@@ -2,6 +2,7 @@ package mas;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.NonSI;
@@ -12,13 +13,17 @@ import org.jscience.physics.amount.Amount;
 public class SimulationSettings {
 
 	private final Amount<Velocity> truckSpeed;
+
 	private final Amount<Length> communicationRadius;
 	private final double communicationReliability;
+
+	private final Amount<Duration> packetBroadcastPeriod;
 
 	private SimulationSettings(Builder builder) {
 		this.truckSpeed = checkNotNull(builder.truckSpeed);
 		this.communicationRadius = checkNotNull(builder.communicationRadius);
 		this.communicationReliability = builder.communicationReliability;
+		this.packetBroadcastPeriod = checkNotNull(builder.packetBroadcastPeriod);
 	}
 
 	/**
@@ -43,6 +48,13 @@ public class SimulationSettings {
 		return communicationReliability;
 	}
 
+	/**
+	 * Get the broadcast period for a packet.
+	 */
+	public Amount<Duration> getPacketBroadcastPeriod() {
+		return packetBroadcastPeriod;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -54,6 +66,8 @@ public class SimulationSettings {
 		private Amount<Length> communicationRadius = Amount.valueOf(10d,
 				SI.KILOMETRE);
 		private double communicationReliability = 1.0d;
+		private Amount<Duration> packetBroadcastPeriod = Amount.valueOf(5d,
+				SI.SECOND);
 
 		protected Builder() {
 		}
@@ -70,6 +84,11 @@ public class SimulationSettings {
 
 		public Builder setCommunicationReliability(double reliability) {
 			this.communicationReliability = reliability;
+			return this;
+		}
+
+		public Builder setPacketBroadcastPeriod(Amount<Duration> period) {
+			this.packetBroadcastPeriod = period;
 			return this;
 		}
 
