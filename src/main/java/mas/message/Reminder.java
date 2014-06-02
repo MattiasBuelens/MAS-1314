@@ -2,8 +2,8 @@ package mas.message;
 
 import mas.Packet;
 import mas.Truck;
-import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.core.model.pdp.PDPModel.ParcelState;
+import rinde.sim.core.model.pdp.Vehicle;
 
 public class Reminder extends TypedBroadcastMessage<Packet, Truck> implements
 		TruckMessage {
@@ -12,7 +12,8 @@ public class Reminder extends TypedBroadcastMessage<Packet, Truck> implements
 	private final Vehicle deliveringTruck;
 	private final long deliveryTime;
 
-	public Reminder(Packet packet, ParcelState state, Vehicle deliveringTruck, long deliveryTime) {
+	public Reminder(Packet packet, ParcelState state, Vehicle deliveringTruck,
+			long deliveryTime) {
 		super(packet, Truck.class);
 		this.state = state;
 		this.deliveringTruck = deliveringTruck;

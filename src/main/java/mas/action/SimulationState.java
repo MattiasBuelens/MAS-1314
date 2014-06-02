@@ -6,8 +6,8 @@ import java.util.Set;
 
 import javax.annotation.concurrent.Immutable;
 
+import mas.Packet;
 import rinde.sim.core.graph.Point;
-import rinde.sim.core.model.pdp.Parcel;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -16,16 +16,16 @@ public class SimulationState {
 
 	private final long time;
 	private final Point position;
-	private final ImmutableSet<Parcel> pickedUp;
-	private final ImmutableSet<Parcel> delivered;
+	private final ImmutableSet<Packet> pickedUp;
+	private final ImmutableSet<Packet> delivered;
 
 	public SimulationState(long time, Point position,
-			Set<? extends Parcel> pickedUp) {
-		this(time, position, pickedUp, ImmutableSet.<Parcel> of());
+			Set<? extends Packet> pickedUp) {
+		this(time, position, pickedUp, ImmutableSet.<Packet> of());
 	}
 
 	protected SimulationState(long time, Point position,
-			Set<? extends Parcel> pickedUp, Set<? extends Parcel> delivered) {
+			Set<? extends Packet> pickedUp, Set<? extends Packet> delivered) {
 		this.time = time;
 		this.position = position;
 		this.pickedUp = ImmutableSet.copyOf(pickedUp);
@@ -40,20 +40,20 @@ public class SimulationState {
 		return position;
 	}
 
-	public ImmutableSet<Parcel> getPickedUp() {
+	public ImmutableSet<Packet> getPickedUp() {
 		return pickedUp;
 	}
 
-	public ImmutableSet<Parcel> getDelivered() {
+	public ImmutableSet<Packet> getDelivered() {
 		return delivered;
 	}
-	
-	public boolean isPickedUp(Parcel parcel) {
-		return getPickedUp().contains(parcel) || isDelivered(parcel);
+
+	public boolean isPickedUp(Packet packet) {
+		return getPickedUp().contains(packet) || isDelivered(packet);
 	}
-	
-	public boolean isDelivered(Parcel parcel) {
-		return getDelivered().contains(parcel);
+
+	public boolean isDelivered(Packet packet) {
+		return getDelivered().contains(packet);
 	}
 
 	public SimulationState nextState(long newTime) {
@@ -65,19 +65,19 @@ public class SimulationState {
 	}
 
 	public SimulationState nextState(long newTime,
-			Set<? extends Parcel> newPickedUp) {
+			Set<? extends Packet> newPickedUp) {
 		return nextState(newTime, getPosition(), newPickedUp, getDelivered());
 	}
 
 	public SimulationState nextState(long newTime,
-			Set<? extends Parcel> newPickedUp,
-			Set<? extends Parcel> newDelivered) {
+			Set<? extends Packet> newPickedUp,
+			Set<? extends Packet> newDelivered) {
 		return nextState(newTime, getPosition(), newPickedUp, newDelivered);
 	}
 
 	public SimulationState nextState(long newTime, Point newPosition,
-			Set<? extends Parcel> newPickedUp,
-			Set<? extends Parcel> newDelivered) {
+			Set<? extends Packet> newPickedUp,
+			Set<? extends Packet> newDelivered) {
 		checkArgument(newTime >= getTime(),
 				"New time must be after current time");
 		return new SimulationState(newTime, newPosition, newPickedUp,

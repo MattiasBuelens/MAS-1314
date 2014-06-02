@@ -7,6 +7,7 @@ public interface Action {
 
 	public boolean execute(BDIVehicle target, TimeLapse time);
 
-	public SimulationState simulate(BDIVehicle target, SimulationState state) throws IllegalActionException;
+	public SimulationState simulate(BDIVehicle target, SimulationState state)
+			throws IllegalActionException;
 
 }

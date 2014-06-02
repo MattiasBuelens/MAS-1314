@@ -17,8 +17,6 @@ import mas.timer.TimerCallback;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jscience.physics.amount.Amount;
 
-import com.google.common.collect.ImmutableSet;
-
 import rinde.sim.core.SimulatorAPI;
 import rinde.sim.core.SimulatorUser;
 import rinde.sim.core.TimeLapse;
@@ -32,6 +30,8 @@ import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.core.model.road.MoveProgress;
 import rinde.sim.core.model.road.RoadModel;
+
+import com.google.common.collect.ImmutableSet;
 
 public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 		SimulatorUser {
@@ -185,11 +185,11 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 				parcel.getDeliveryDuration());
 	}
 
-	public boolean containsPacket(Parcel parcel) {
+	public boolean containsParcel(Parcel parcel) {
 		return getPDPModel().containerContains(this, parcel);
 	}
-	
-	public ImmutableSet<Parcel> getContainedPackets() {
+
+	public ImmutableSet<Parcel> getContainedParcels() {
 		return getPDPModel().getContents(this);
 	}
 

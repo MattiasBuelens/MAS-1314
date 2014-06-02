@@ -28,10 +28,10 @@ import org.jscience.physics.amount.Amount;
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Message;
-import rinde.sim.core.model.pdp.Parcel;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 public class Truck extends BDIVehicle implements CommunicationUser {
 
@@ -55,6 +55,11 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	public Truck(Point startPosition, SimulationSettings settings) {
 		this.settings = settings;
 		setStartPosition(startPosition);
+	}
+
+	protected ImmutableSet<Packet> getContainedPackets() {
+		return ImmutableSet.copyOf(Iterables.filter(getContainedParcels(),
+				Packet.class));
 	}
 
 	// Vehicle
@@ -220,12 +225,12 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	}
 
 	private PlanBuilder nearestNeighbour(SimulationState startState,
-			ImmutableSet<? extends Parcel> packets) {
+			ImmutableSet<? extends Packet> packets) {
 		return nearestNeighbour(new PlanBuilder(startState), packets);
 	}
 
 	private PlanBuilder nearestNeighbour(PlanBuilder plan,
-			ImmutableSet<? extends Parcel> packets) {
+			ImmutableSet<? extends Packet> packets) {
 		List<PacketTask> tasks = getNextTasks(plan.getState(), packets);
 
 		while (!tasks.isEmpty()) {
@@ -248,17 +253,17 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	}
 
 	private List<PacketTask> getNextTasks(SimulationState state,
-			Set<? extends Parcel> pickUps) {
+			Set<? extends Packet> pickUps) {
 		List<PacketTask> tasks = new ArrayList<>();
-		for (Parcel packet : pickUps) {
+		for (Packet packet : pickUps) {
 			if (state.isPickedUp(packet))
 				continue;
 			// Pick up at position
-			Point position = getRoadModel().getPosition(packet);
+			Point position = packet.getPosition();
 			double distance = Point.distance(state.getPosition(), position);
 			tasks.add(new PacketTask(false, packet, distance));
 		}
-		for (Parcel packet : state.getPickedUp()) {
+		for (Packet packet : state.getPickedUp()) {
 			// Deliver at destination
 			Point destination = packet.getDestination();
 			double distance = Point.distance(state.getPosition(), destination);
@@ -290,12 +295,11 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 		}
 	}
 
-	private PlanBuilder planPickup(PlanBuilder plan, Parcel packet,
+	private PlanBuilder planPickup(PlanBuilder plan, Packet packet,
 			boolean allowWait) throws IllegalActionException {
-		Point pickupPosition = getRoadModel().getPosition(packet);
-		if (!plan.getState().getPosition().equals(pickupPosition)) {
+		if (!plan.getState().getPosition().equals(packet.getPosition())) {
 			// Move to packet position
-			plan = plan.nextAction(this, new MoveAction(pickupPosition));
+			plan = plan.nextAction(this, new MoveAction(packet.getPosition()));
 		}
 		if (!canPickupAt(packet, plan.getState().getTime()) && allowWait) {
 			// Wait for pickup begin time
@@ -307,7 +311,7 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 		return plan;
 	}
 
-	private PlanBuilder planDelivery(PlanBuilder plan, Parcel packet,
+	private PlanBuilder planDelivery(PlanBuilder plan, Packet packet,
 			boolean allowWait) throws IllegalActionException {
 		if (!plan.getState().getPosition().equals(packet.getDestination())) {
 			// Move to packet destination
@@ -324,7 +328,7 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 		return plan;
 	}
 
-	private long getPlannedDeliveryTime(PlanBuilder plan, final Parcel packet) {
+	private long getPlannedDeliveryTime(PlanBuilder plan, final Packet packet) {
 		PlanBuilder deliveryPlan = plan
 				.findOldest(new Predicate<PlanBuilder>() {
 					@Override

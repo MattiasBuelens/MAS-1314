@@ -4,21 +4,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 import mas.BDIVehicle;
+import mas.Packet;
 import rinde.sim.core.TimeLapse;
-import rinde.sim.core.model.pdp.Parcel;
 
 public class PickupAction implements Action {
 
-	private final Parcel packet;
+	private final Packet packet;
 
-	public PickupAction(Parcel packet) {
+	public PickupAction(Packet packet) {
 		this.packet = packet;
 	}
 
 	@Override
 	public boolean execute(BDIVehicle target, TimeLapse time) {
 		target.pickup(packet, time);
-		return target.containsPacket(packet);
+		return target.containsParcel(packet);
 	}
 
 	@Override
@@ -31,7 +31,7 @@ public class PickupAction implements Action {
 		}
 
 		long newTime = currentTime + packet.getPickupDuration();
-		Set<Parcel> newPickedUp = new HashSet<>(state.getPickedUp());
+		Set<Packet> newPickedUp = new HashSet<>(state.getPickedUp());
 		newPickedUp.add(packet);
 
 		return state.nextState(newTime, newPickedUp);

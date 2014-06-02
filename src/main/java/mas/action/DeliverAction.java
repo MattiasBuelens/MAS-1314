@@ -4,21 +4,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 import mas.BDIVehicle;
+import mas.Packet;
 import rinde.sim.core.TimeLapse;
-import rinde.sim.core.model.pdp.Parcel;
 
 public class DeliverAction implements Action {
 
-	private final Parcel packet;
+	private final Packet packet;
 
-	public DeliverAction(Parcel packet) {
+	public DeliverAction(Packet packet) {
 		this.packet = packet;
 	}
 
 	@Override
 	public boolean execute(BDIVehicle target, TimeLapse time) {
 		target.deliver(packet, time);
-		return !target.containsPacket(packet);
+		return !target.containsParcel(packet);
 	}
 
 	@Override
@@ -31,8 +31,8 @@ public class DeliverAction implements Action {
 		}
 
 		long newTime = currentTime + packet.getDeliveryDuration();
-		Set<Parcel> newPickedUp = new HashSet<>(state.getPickedUp());
-		Set<Parcel> newDelivered = new HashSet<>(state.getDelivered());
+		Set<Packet> newPickedUp = new HashSet<>(state.getPickedUp());
+		Set<Packet> newDelivered = new HashSet<>(state.getDelivered());
 		newPickedUp.remove(packet);
 		newDelivered.add(packet);
 

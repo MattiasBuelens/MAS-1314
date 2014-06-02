@@ -2,21 +2,19 @@ package mas;
 
 import java.util.Comparator;
 
-import rinde.sim.core.model.pdp.Parcel;
-
 import com.google.common.primitives.Doubles;
 
 public class PacketTask {
 
 	private final boolean isDelivery;
-	private final Parcel packet;
+	private final Packet packet;
 	private final double weight;
 
-	public PacketTask(boolean isDelivery, Parcel packet) {
+	public PacketTask(boolean isDelivery, Packet packet) {
 		this(isDelivery, packet, 0d);
 	}
 
-	public PacketTask(boolean isDelivery, Parcel packet, double distance) {
+	public PacketTask(boolean isDelivery, Packet packet, double distance) {
 		this.packet = packet;
 		this.weight = distance;
 		this.isDelivery = isDelivery;
@@ -30,7 +28,7 @@ public class PacketTask {
 		return !isDelivery();
 	}
 
-	public Parcel getPacket() {
+	public Packet getPacket() {
 		return packet;
 	}
 
