@@ -147,24 +147,14 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 		return null;
 	}
 
-	private Plan nearestNeighbour(Packet startPacket,
-			ImmutableSet<Packet> packets, long time) {
+	private Plan nearestNeighbour(ImmutableSet<? extends Parcel> packets,
+			long time) {
 		// Initialize from actual truck state
 		SimulationState startState = new SimulationState(time, getPosition(),
 				getContainedPackets());
 		PlanBuilder plan = new PlanBuilder(startState);
 
-		try {
-			// Start packet
-			boolean isStartDelivery = startState.isPickedUp(startPacket);
-			PacketTask startTask = new PacketTask(isStartDelivery, startPacket);
-			plan = planTask(plan, startTask, true);
-		} catch (IllegalActionException e) {
-			// No valid action to start packet
-			return null;
-		}
-
-		// Continue with remaining packets
+		// Find path for all packets
 		return nearestNeighbour(plan, packets);
 	}
 
