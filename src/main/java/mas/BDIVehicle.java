@@ -54,11 +54,12 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 		// Update beliefs
 		boolean shouldReconsider = updateBeliefs(messages, time.getTime());
 
-		do {
-			if (!hasPlan() || shouldReconsider) {
-				// Update desires + intentions + plan
-				plan = reconsider(time.getTime());
-			}
+		if (!hasPlan() || shouldReconsider) {
+			// Update desires + intentions + plan
+			plan = reconsider(time.getTime());
+		}
+
+		while (hasPlan() && time.hasTimeLeft()) {
 			try {
 				// Execute the plan
 				getPlan().step(this, time);
@@ -67,7 +68,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 				plan = null;
 				handleActionFailed(e);
 			}
-		} while (hasPlan() && time.hasTimeLeft());
+		}
 
 		// Run timers
 		runTimers(time.getTime());

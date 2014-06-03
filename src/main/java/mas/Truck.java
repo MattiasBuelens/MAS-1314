@@ -461,16 +461,15 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 		return false;
 	}
 
-	private ImmutableSet<Packet> getPacketsToConsider(Set<Packet> packets,
-			long time) {
-		ImmutableSet.Builder<Packet> builder = ImmutableSet.builder();
+	private Set<Packet> getPacketsToConsider(Set<Packet> packets, long time) {
+		Set<Packet> consider = new HashSet<>();
 		for (Packet packet : packets) {
 			Long nextTime = nextConsiderTimes.get(packet);
 			if (nextTime == null || nextTime >= time) {
-				builder.add(packet);
+				consider.add(packet);
 			}
 		}
-		return builder.build();
+		return consider;
 	}
 
 	private void reconsiderPacketLater(Packet packet, long time) {
