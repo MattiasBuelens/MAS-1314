@@ -278,8 +278,8 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 						.build();
 				PlanBuilder newPlan = nearestNeighbour(startState,
 						newIntentions);
-				if (newPlan == null) {
-					// No possible plan with this desire
+				if (newPlan == null || !isBetterPlan(newPlan, desire)) {
+					// No better plan with this desire
 					// Remove for next run
 					impossibleDesires.add(desire);
 					// Reconsider later
@@ -445,6 +445,22 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 					}
 				});
 		return deliveryPlan.getState().getTime();
+	}
+
+	private boolean isBetterPlan(PlanBuilder newPlan, Packet packet) {
+		PacketInfo info = packetInfo.get(packet);
+		if (info == null) {
+			// No information about assignment yet
+			return true;
+		}
+		if (this.equals(info.getDeliveringTruck())) {
+			// We are already assigned to the packet, no constraints
+			return true;
+		}
+		// We are not assigned to the packet
+		// We must beat the current delivery time in order to make a proposal
+		long plannedDeliveryTime = getPlannedDeliveryTime(newPlan, packet);
+		return plannedDeliveryTime < info.getDeliveryTime();
 	}
 
 	private long getReconsiderTimeout() {
