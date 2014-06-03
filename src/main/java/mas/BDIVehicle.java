@@ -229,6 +229,10 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 	public Point getPosition() {
 		return getRoadModel().getPosition(this);
 	}
+	
+	public Point getRandomPosition() {
+		return getRoadModel().getRandomPosition(getRandomGenerator());
+	}
 
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {

@@ -50,14 +50,14 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 	private Map<Packet, PacketInfo> packetInfo = new HashMap<>();
 
 	/**
-	 * Packets this truck may consider to pick up and deliver.
-	 */
-	private Set<Packet> desires = new HashSet<>();
-
-	/**
 	 * New packets this truck may consider to pick up and deliver.
 	 */
 	private Set<Packet> newDesires = new HashSet<>();
+
+	/**
+	 * Assigned packets this truck may consider to pick up and deliver.
+	 */
+	private Set<Packet> desires = new HashSet<>();
 
 	/**
 	 * Packets this truck intents to pick up and deliver.
@@ -70,6 +70,12 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 	 * Used to verify received packet messages and re-send proposals.
 	 */
 	private Map<Packet, Long> plannedDeliveryTimes = new HashMap<>();
+
+	/**
+	 * Earliest time a desire should be made eligible for re-consideration after
+	 * a failed attempt at planning it.
+	 */
+	private Map<Packet, Long> nextConsiderTimes = new HashMap<>();
 
 	/**
 	 * Flag indicating if any packets were dropped from the intentions.
@@ -115,22 +121,23 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 			((TruckMessage) message).accept(this);
 		}
 
-		return shouldReconsider();
+		return shouldReconsider(time);
 	}
 
 	@Override
 	public void visitNewPacket(NewPacket newPacket) {
 		// Newly introduced packet
 		Packet packet = newPacket.getPacket();
-		// Might be an obsolete message
-		if (!(desires.contains(packet) || intentions.contains(packet))) {
-			newDesires.add(packet);
-		}
+
 		if (intentions.contains(packet)) {
-			// Packet not yet picked up but we intend to do so
+			// Packet not yet assigned but we intend to pick it up
 			// Packet did not receive our proposal, re-send
 			long proposedDeliveryTime = plannedDeliveryTimes.get(packet);
 			transmit(new Proposal(this, packet, proposedDeliveryTime));
+		} else {
+			// Packet not yet assigned and we don't yet intend to pick it up
+			// Add to desires
+			newDesires.add(packet);
 		}
 	}
 
@@ -141,6 +148,8 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 		PacketInfo info = reminder.getInfo();
 		// Store updated info
 		packetInfo.put(packet, info);
+		newDesires.remove(packet);
+
 		if (info.isPickingUp()) {
 			// Packet already picked up
 			if (this.equals(info.getDeliveringTruck())) {
@@ -171,22 +180,32 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 				} else {
 					// Packet has a better proposal from another truck
 					intentions.remove(packet);
+					desires.add(packet);
 					packagesLost = true;
 				}
 			}
 		} else {
 			// Packet not yet picked up and we don't yet intend to do so
 			// Add to desires
-			// TODO beslissen of we dit in de pool steken of niet: enkel
-			// nieuwe packages overwegen/niet?
 			desires.add(packet);
-			newDesires.remove(packet);
 		}
 	}
 
-	public boolean shouldReconsider() {
-		// TODO Complete?
-		return packagesLost;
+	public boolean shouldReconsider(long time) {
+		if (packagesLost) {
+			// An intention was lost
+			return true;
+		}
+		if (hasPacketsToConsider(newDesires, time)) {
+			// A new packet should be (re-)considered
+			return true;
+		}
+		if (hasPacketsToConsider(desires, time)) {
+			// An assigned packet should be (re-)considered
+			return true;
+		}
+		// Nothing to do at this point
+		return false;
 	}
 
 	@Override
@@ -224,14 +243,13 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 		checkState(plan != null, "Truck has no plan for its current intentions");
 
 		// Add intentions from new packages
-		PlanBuilder newPlan = selectIntentions(startState, newDesires);
+		PlanBuilder newPlan = selectIntentions(newDesires, startState, time);
 		if (newPlan != null) {
 			plan = newPlan;
 		}
 
-		// Add intentions from old packages
-		// TODO When should we do this?
-		newPlan = selectIntentions(startState, desires);
+		// Add intentions from assigned packages
+		newPlan = selectIntentions(desires, startState, time);
 		if (newPlan != null) {
 			plan = newPlan;
 		}
@@ -241,15 +259,20 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 		sendProposals();
 
 		// Build the plan
-		return plan.build();
+		Plan result = plan.build();
+		if (result.isEmpty()) {
+			// Empty plan, go to random position instead
+			result = planRandomMove(startState);
+		}
+		return result;
 	}
 
-	private PlanBuilder selectIntentions(SimulationState startState,
-			Set<Packet> desires) {
+	private PlanBuilder selectIntentions(Set<Packet> source,
+			SimulationState startState, long currentTime) {
 		PlanBuilder bestPlan = null;
 
-		// Remove desires that are already intentions
-		desires.removeAll(intentions);
+		// Get packets to consider for intentions
+		Set<Packet> desires = getPacketsToConsider(source, currentTime);
 
 		// TODO Adjust the stop condition?
 		while (!desires.isEmpty()) {
@@ -267,8 +290,10 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 						newIntentions);
 				if (newPlan == null) {
 					// No possible plan with this desire
-					// Mark for removal
+					// Remove for next run
 					impossibleDesires.add(desire);
+					// Reconsider later
+					reconsiderPacketLater(desire, currentTime);
 				} else {
 					// Check if better total time
 					long totalTime = newPlan.getState().getTime();
@@ -280,7 +305,7 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 				}
 			}
 
-			// Remove impossible desires
+			// Remove impossible desires for next run
 			desires.removeAll(impossibleDesires);
 
 			if (bestDesire == null) {
@@ -289,6 +314,7 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 			} else {
 				// Add to intentions
 				desires.remove(bestDesire);
+				source.remove(bestDesire);
 				intentions.add(bestDesire);
 			}
 		}
@@ -395,6 +421,15 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 		return plan;
 	}
 
+	private Plan planRandomMove(SimulationState startState) {
+		try {
+			return new PlanBuilder(startState).nextAction(this,
+					new MoveAction(getRandomPosition())).build();
+		} catch (IllegalActionException cannotHappen) {
+			return null;
+		}
+	}
+
 	private void updateProposals(PlanBuilder plan) {
 		plannedDeliveryTimes.clear();
 		for (Packet packet : plan.getState().getDelivered()) {
@@ -420,6 +455,36 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 					}
 				});
 		return deliveryPlan.getState().getTime();
+	}
+
+	private long getReconsiderTimeout() {
+		return settings.getTruckReconsiderTimeout().longValue(getTickUnit());
+	}
+
+	private boolean hasPacketsToConsider(Set<Packet> packets, long time) {
+		for (Packet packet : packets) {
+			Long nextTime = nextConsiderTimes.get(packet);
+			if (nextTime == null || nextTime >= time) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private ImmutableSet<Packet> getPacketsToConsider(Set<Packet> packets,
+			long time) {
+		ImmutableSet.Builder<Packet> builder = ImmutableSet.builder();
+		for (Packet packet : packets) {
+			Long nextTime = nextConsiderTimes.get(packet);
+			if (nextTime == null || nextTime >= time) {
+				builder.add(packet);
+			}
+		}
+		return builder.build();
+	}
+
+	private void reconsiderPacketLater(Packet packet, long time) {
+		nextConsiderTimes.put(packet, time + getReconsiderTimeout());
 	}
 
 }

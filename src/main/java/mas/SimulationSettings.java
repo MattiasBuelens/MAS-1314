@@ -18,12 +18,14 @@ public class SimulationSettings {
 	private final double communicationReliability;
 
 	private final Amount<Duration> packetBroadcastPeriod;
+	private final Amount<Duration> truckReconsiderTimeout;
 
 	private SimulationSettings(Builder builder) {
 		this.truckSpeed = checkNotNull(builder.truckSpeed);
 		this.communicationRadius = checkNotNull(builder.communicationRadius);
 		this.communicationReliability = builder.communicationReliability;
 		this.packetBroadcastPeriod = checkNotNull(builder.packetBroadcastPeriod);
+		this.truckReconsiderTimeout = checkNotNull(builder.truckReconsiderTimeout);
 	}
 
 	/**
@@ -55,6 +57,14 @@ public class SimulationSettings {
 		return packetBroadcastPeriod;
 	}
 
+	/**
+	 * Get the delay for a truck to re-consider a packet after it failed to add
+	 * it to its plan.
+	 */
+	public Amount<Duration> getTruckReconsiderTimeout() {
+		return truckReconsiderTimeout;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -63,10 +73,12 @@ public class SimulationSettings {
 
 		private Amount<Velocity> truckSpeed = Amount.valueOf(50d,
 				NonSI.KILOMETRES_PER_HOUR);
-		private Amount<Length> communicationRadius = Amount.valueOf(10d,
+		private Amount<Length> communicationRadius = Amount.valueOf(1d,
 				SI.KILOMETRE);
 		private double communicationReliability = 1.0d;
 		private Amount<Duration> packetBroadcastPeriod = Amount.valueOf(5d,
+				SI.SECOND);
+		private Amount<Duration> truckReconsiderTimeout = Amount.valueOf(180l,
 				SI.SECOND);
 
 		protected Builder() {
@@ -89,6 +101,11 @@ public class SimulationSettings {
 
 		public Builder setPacketBroadcastPeriod(Amount<Duration> period) {
 			this.packetBroadcastPeriod = period;
+			return this;
+		}
+
+		public Builder setTruckReconsiderTimeout(Amount<Duration> delay) {
+			this.truckReconsiderTimeout = delay;
 			return this;
 		}
 

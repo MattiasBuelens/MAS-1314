@@ -42,7 +42,7 @@ public class PDP {
 	 * Communication radius, in kilometers.
 	 */
 	private static final Amount<Length> COMMUNICATION_RADIUS = Amount.valueOf(
-			10d, SI.KILOMETER);
+			1d, SI.KILOMETER);
 
 	/**
 	 * Communication reliability, between 0.0 and 1.0.
@@ -60,6 +60,12 @@ public class PDP {
 	 */
 	private static final Amount<Duration> PACKET_BROADCAST_PERIOD = Amount
 			.valueOf(5l, SI.SECOND);
+
+	/**
+	 * Truck reconsider delay, in seconds.
+	 */
+	private static final Amount<Duration> TRUCK_RECONSIDER_TIMEOUT = Amount
+			.valueOf(180l, SI.SECOND);
 
 	private static final String MAP_FILE = "/data/maps/leuven-simple.dot";
 
@@ -89,7 +95,8 @@ public class PDP {
 				.setTruckSpeed(VEHICLE_SPEED)
 				.setCommunicationRadius(COMMUNICATION_RADIUS)
 				.setCommunicationReliability(COMMUNICATION_RELIABILITY)
-				.setPacketBroadcastPeriod(PACKET_BROADCAST_PERIOD).build();
+				.setPacketBroadcastPeriod(PACKET_BROADCAST_PERIOD)
+				.setTruckReconsiderTimeout(TRUCK_RECONSIDER_TIMEOUT).build();
 
 		RoadModel roadModel = new GraphRoadModel(loadGraph(MAP_FILE),
 				SI.KILOMETER, NonSI.KILOMETERS_PER_HOUR);
