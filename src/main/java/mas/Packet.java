@@ -20,7 +20,6 @@ import rinde.sim.core.TickListener;
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Message;
-import rinde.sim.core.model.pdp.PDPModel.ParcelState;
 import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.util.TimeWindow;
 
@@ -62,10 +61,6 @@ public class Packet extends BDIParcel implements CommunicationUser,
 
 	protected boolean needsAssignment() {
 		return !isPickingUp() && getDeliveringVehicle() == null;
-	}
-
-	protected boolean isPickingUp() {
-		return getState().isPickedUp() || getState() == ParcelState.PICKING_UP;
 	}
 
 	@Override

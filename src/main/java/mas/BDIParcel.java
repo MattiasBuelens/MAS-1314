@@ -24,10 +24,13 @@ import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
 import rinde.sim.core.model.pdp.PDPModel;
-import rinde.sim.core.model.pdp.Vehicle;
+import rinde.sim.core.model.pdp.PDPModel.PDPModelEventType;
 import rinde.sim.core.model.pdp.PDPModel.ParcelState;
+import rinde.sim.core.model.pdp.PDPModelEvent;
 import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.road.RoadModel;
+import rinde.sim.event.Event;
+import rinde.sim.event.Listener;
 import rinde.sim.util.TimeWindow;
 
 public abstract class BDIParcel extends Parcel implements CommunicationUser,
@@ -36,6 +39,8 @@ public abstract class BDIParcel extends Parcel implements CommunicationUser,
 	private CommunicationAPI commAPI;
 	private SimulatorAPI simAPI;
 	private final Mailbox mailbox = new Mailbox();
+
+	private BDIVehicle containingVehicle;
 
 	private final List<Timer> timers = new ArrayList<>();
 
@@ -68,13 +73,16 @@ public abstract class BDIParcel extends Parcel implements CommunicationUser,
 		return getPDPModel().getParcelState(this);
 	}
 
-	protected Vehicle getContainingVehicle() {
-		for (Vehicle vehicle : getPDPModel().getVehicles()) {
-			if (getPDPModel().containerContains(vehicle, this)) {
-				return vehicle;
-			}
-		}
-		return null;
+	protected BDIVehicle getContainingVehicle() {
+		return containingVehicle;
+	}
+
+	protected boolean isPickingUp() {
+		return getState().isPickedUp() || getState() == ParcelState.PICKING_UP;
+	}
+
+	protected boolean isDelivering() {
+		return getState().isDelivered() || getState() == ParcelState.DELIVERING;
 	}
 
 	/*
@@ -137,7 +145,13 @@ public abstract class BDIParcel extends Parcel implements CommunicationUser,
 
 	@Override
 	public Point getPosition() {
-		return getRoadModel().getPosition(this);
+		if (isDelivering()) {
+			return getDestination();
+		} else if (isPickingUp()) {
+			return getContainingVehicle().getPosition();
+		} else {
+			return getRoadModel().getPosition(this);
+		}
 	}
 
 	public abstract Amount<Length> getRadiusAmount();
@@ -149,6 +163,16 @@ public abstract class BDIParcel extends Parcel implements CommunicationUser,
 
 	protected void initialize() {
 		cancelTimers();
+
+		getPDPModel().getEventAPI().addListener(new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				PDPModelEvent pdpEvent = (PDPModelEvent) e;
+				if (BDIParcel.this.equals(pdpEvent.parcel)) {
+					containingVehicle = (BDIVehicle) pdpEvent.vehicle;
+				}
+			}
+		}, PDPModelEventType.START_PICKUP);
 	}
 
 	@Override
