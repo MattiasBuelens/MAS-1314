@@ -62,13 +62,13 @@ public class PDP {
 	 * Packet broadcast period, in seconds.
 	 */
 	private static final Amount<Duration> PACKET_BROADCAST_PERIOD = Amount
-			.valueOf(5l, SI.SECOND);
+			.valueOf(30l, SI.SECOND);
 
 	/**
 	 * Truck reconsider delay, in seconds.
 	 */
 	private static final Amount<Duration> TRUCK_RECONSIDER_TIMEOUT = Amount
-			.valueOf(180l, SI.SECOND);
+			.valueOf(5l, NonSI.MINUTE);
 
 	private static final String MAP_FILE = "/data/maps/leuven-simple.dot";
 
