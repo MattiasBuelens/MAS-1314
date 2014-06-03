@@ -454,7 +454,7 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 	private boolean hasPacketsToConsider(Set<Packet> packets, long time) {
 		for (Packet packet : packets) {
 			Long nextTime = nextConsiderTimes.get(packet);
-			if (nextTime == null || nextTime >= time) {
+			if (nextTime == null || nextTime <= time) {
 				return true;
 			}
 		}
@@ -465,7 +465,7 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 		Set<Packet> consider = new HashSet<>();
 		for (Packet packet : packets) {
 			Long nextTime = nextConsiderTimes.get(packet);
-			if (nextTime == null || nextTime >= time) {
+			if (nextTime == null || nextTime <= time) {
 				consider.add(packet);
 			}
 		}
