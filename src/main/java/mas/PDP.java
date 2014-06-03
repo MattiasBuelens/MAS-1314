@@ -187,7 +187,7 @@ public class PDP {
 				deliveryStart.longValue(tickUnit),
 				deliveryEnd.longValue(tickUnit));
 		return new Packet(pStartPosition, pDestination, pPickupDuration,
-				pickupTW, pDeliveryDuration, deliveryTW, 1l, settings);
+				pickupTW, pDeliveryDuration, deliveryTW, 0l, settings);
 	}
 
 	// load the graph file
