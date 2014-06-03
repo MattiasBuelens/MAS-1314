@@ -102,9 +102,11 @@ public class PDP {
 				.setTruckReconsiderTimeout(TRUCK_RECONSIDER_TIMEOUT).build();
 
 		RoadModel roadModel = new GraphRoadModel(loadGraph(MAP_FILE),
-				SI.KILOMETER, NonSI.KILOMETERS_PER_HOUR);
+				SI.METER, SI.METERS_PER_SECOND);
 		PDPModel pdpModel = new DefaultPDPModel();
-		CommunicationModel commModel = new CommunicationModel(rnd, false);
+		// FIXME CommunicationModel radius doesn't seem to work?!
+		// TODO Change true back to false when radiuses are fixed
+		CommunicationModel commModel = new CommunicationModel(rnd, true);
 		sim.register(roadModel);
 		sim.register(pdpModel);
 		sim.register(commModel);
