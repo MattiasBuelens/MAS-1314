@@ -236,8 +236,9 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 			plan = newPlan;
 		}
 
-		// Send updated proposals to all intentions
-		sendProposals(plan);
+		// Update and send proposals to all intentions
+		updateProposals(plan);
+		sendProposals();
 
 		// Build the plan
 		return plan.build();
@@ -394,15 +395,19 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 		return plan;
 	}
 
-	private void sendProposals(PlanBuilder plan) {
+	private void updateProposals(PlanBuilder plan) {
 		plannedDeliveryTimes.clear();
 		for (Packet packet : plan.getState().getDelivered()) {
 			long deliveryTime = getPlannedDeliveryTime(plan, packet);
 			// Store proposed delivery time for re-sending
 			plannedDeliveryTimes.put(packet, deliveryTime);
-			// Send proposal
-			Proposal proposal = new Proposal(this, packet, deliveryTime);
-			transmit(proposal);
+		}
+	}
+
+	private void sendProposals() {
+		for (Packet packet : intentions) {
+			long deliveryTime = plannedDeliveryTimes.get(packet);
+			transmit(new Proposal(this, packet, deliveryTime));
 		}
 	}
 
