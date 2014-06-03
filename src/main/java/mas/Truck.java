@@ -209,16 +209,6 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 	}
 
 	@Override
-	protected boolean isSucceeded() {
-		return true;
-	}
-
-	@Override
-	protected boolean isImpossible() {
-		return false;
-	}
-
-	@Override
 	protected void handleActionFailed(ActionFailedException e) {
 		if (e instanceof PickupFailedException) {
 			// Pick up failed, drop intention

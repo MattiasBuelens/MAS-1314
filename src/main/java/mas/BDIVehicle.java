@@ -59,22 +59,15 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 				// Update desires + intentions + plan
 				plan = reconsider(time.getTime());
 			}
-			if (hasValidPlan()) {
-				try {
-					getPlan().step(this, time);
-				} catch (ActionFailedException e) {
-					plan = null;
-					handleActionFailed(e);
-				}
-				if (!hasValidPlan()) {
-					plan = null;
-				}
-			} else {
+			try {
+				// Execute the plan
+				getPlan().step(this, time);
+			} catch (ActionFailedException e) {
+				// Plan failed
 				plan = null;
+				handleActionFailed(e);
 			}
 		} while (hasPlan() && time.hasTimeLeft());
-
-		// TODO Send messages
 
 		// Run timers
 		runTimers(time.getTime());
@@ -88,15 +81,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 		return plan;
 	}
 
-	protected boolean hasValidPlan() {
-		return hasPlan() && !isSucceeded() && !isImpossible();
-	}
-
 	protected abstract boolean updateBeliefs(Queue<Message> messages, long time);
-
-	protected abstract boolean isSucceeded();
-
-	protected abstract boolean isImpossible();
 
 	protected abstract Plan reconsider(long time);
 
@@ -229,7 +214,7 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 	public Point getPosition() {
 		return getRoadModel().getPosition(this);
 	}
-	
+
 	public Point getRandomPosition() {
 		return getRoadModel().getRandomPosition(getRandomGenerator());
 	}
