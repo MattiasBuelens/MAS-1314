@@ -39,7 +39,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-public class Truck extends BDIVehicle implements CommunicationUser {
+public class Truck extends BDIVehicle implements CommunicationUser,
+		TruckMessageVisitor {
 
 	private final SimulationSettings settings;
 
@@ -62,6 +63,20 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	 * Packets this truck intents to pick up and deliver.
 	 */
 	private Set<Packet> intentions = new HashSet<>();
+
+	/**
+	 * Proposed delivery times for planned intentions.
+	 * 
+	 * Used to verify received packet messages and re-send proposals.
+	 */
+	private Map<Packet, Long> plannedDeliveryTimes = new HashMap<>();
+
+	/**
+	 * Flag indicating if any packets were dropped from the intentions.
+	 * 
+	 * If set, reconsider the intentions and plan.
+	 */
+	private boolean packagesLost = false;
 
 	public Truck(Point startPosition, SimulationSettings settings) {
 		this.settings = settings;
@@ -94,70 +109,93 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 
 	@Override
 	protected boolean updateBeliefs(Queue<Message> messages, long time) {
-		MessageHandler handler = new MessageHandler();
+		packagesLost = false;
+
 		for (Message message : messages) {
-			((TruckMessage) message).accept(handler);
+			((TruckMessage) message).accept(this);
 		}
-		return handler.shouldReconsider();
+
+		return shouldReconsider();
 	}
 
-	private class MessageHandler implements TruckMessageVisitor {
-
-		private boolean packagesLost = false;
-
-		@Override
-		public void visitNewPacket(NewPacket newPacket) {
-			// Newly introduced packet
-			Packet packet = newPacket.getPacket();
-			// Might be an obsolete message
-			if (!(desires.contains(packet) || intentions.contains(packet))) {
-				newDesires.add(packet);
-			}
+	@Override
+	public void visitNewPacket(NewPacket newPacket) {
+		// Newly introduced packet
+		Packet packet = newPacket.getPacket();
+		// Might be an obsolete message
+		if (!(desires.contains(packet) || intentions.contains(packet))) {
+			newDesires.add(packet);
 		}
+		if (intentions.contains(packet)) {
+			// Packet not yet picked up but we intend to do so
+			// Packet did not receive our proposal, re-send
+			long proposedDeliveryTime = plannedDeliveryTimes.get(packet);
+			transmit(new Proposal(this, packet, proposedDeliveryTime));
+		}
+	}
 
-		@Override
-		public void visitReminder(Reminder reminder) {
-			// Reminder from packet
-			Packet packet = reminder.getSender();
-			PacketInfo info = reminder.getInfo();
-			// Store updated info
-			packetInfo.put(packet, info);
-			if (intentions.contains(packet)) {
-				if (!this.equals(info.getDeliveringTruck())) {
+	@Override
+	public void visitReminder(Reminder reminder) {
+		// Reminder from packet
+		Packet packet = reminder.getSender();
+		PacketInfo info = reminder.getInfo();
+		// Store updated info
+		packetInfo.put(packet, info);
+		if (info.isPickingUp()) {
+			// Packet already picked up
+			if (this.equals(info.getDeliveringTruck())) {
+				// We are picking it up, no problem
+			} else {
+				// Another truck picked it up, forget about package
+				desires.remove(packet);
+				if (intentions.contains(packet)) {
+					// Packet stolen by another truck
 					intentions.remove(packet);
 					packagesLost = true;
 				}
-			} else {
-				// Add to desires
-				// TODO beslissen of we dit in de pool steken of niet: enkel
-				// nieuwe packages overwegen/niet?
-				desires.add(packet);
-				newDesires.remove(packet);
 			}
+		} else if (intentions.contains(packet)) {
+			// Packet not yet picked up but we intend to do so
+			long proposedDeliveryTime = plannedDeliveryTimes.get(packet);
+			if (this.equals(info.getDeliveringTruck())) {
+				// Packet has chosen us to pick it up
+				if (proposedDeliveryTime != info.getDeliveryTime()) {
+					// Packet did not receive our current proposal, re-send
+					transmit(new Proposal(this, packet, proposedDeliveryTime));
+				}
+			} else {
+				// Packet has not chosen us to pick it up
+				if (proposedDeliveryTime < info.getDeliveryTime()) {
+					// We have a better proposal, re-send
+					transmit(new Proposal(this, packet, proposedDeliveryTime));
+				} else {
+					// Packet has a better proposal from another truck
+					intentions.remove(packet);
+					packagesLost = true;
+				}
+			}
+		} else {
+			// Packet not yet picked up and we don't yet intend to do so
+			// Add to desires
+			// TODO beslissen of we dit in de pool steken of niet: enkel
+			// nieuwe packages overwegen/niet?
+			desires.add(packet);
+			newDesires.remove(packet);
 		}
+	}
 
-		public boolean shouldReconsider() {
-			// TODO Complete?
-			return packagesLost;
-		}
-
+	public boolean shouldReconsider() {
+		// TODO Complete?
+		return packagesLost;
 	}
 
 	@Override
 	protected boolean isSucceeded() {
-//		// Succeeded if all packets delivered
-//		for (Packet packet : intentions) {
-//			// TODO Niet vragen aan pakket! Haal uit beliefs.
-//			if (!packet.getState().isDelivered()) {
-//				return false;
-//			}
-//		}
 		return true;
 	}
 
 	@Override
 	protected boolean isImpossible() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
@@ -357,8 +395,12 @@ public class Truck extends BDIVehicle implements CommunicationUser {
 	}
 
 	private void sendProposals(PlanBuilder plan) {
+		plannedDeliveryTimes.clear();
 		for (Packet packet : plan.getState().getDelivered()) {
 			long deliveryTime = getPlannedDeliveryTime(plan, packet);
+			// Store proposed delivery time for re-sending
+			plannedDeliveryTimes.put(packet, deliveryTime);
+			// Send proposal
 			Proposal proposal = new Proposal(this, packet, deliveryTime);
 			transmit(proposal);
 		}

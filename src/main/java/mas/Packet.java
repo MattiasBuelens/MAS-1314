@@ -79,8 +79,12 @@ public class Packet extends BDIParcel implements CommunicationUser,
 		if (isPickingUp())
 			return;
 
-		// Set delivering vehicle if better time
-		if (proposal.getDeliveryTime() < getDeliveryTime()) {
+		if (proposal.getSender().equals(getDeliveringVehicle())) {
+			// Delivering vehicle updates the delivery time
+			// Might have become worse
+			deliveryTime = proposal.getDeliveryTime();
+		} else if (proposal.getDeliveryTime() < getDeliveryTime()) {
+			// New delivering vehicle has better time
 			deliveringVehicle = proposal.getSender();
 			deliveryTime = proposal.getDeliveryTime();
 		}

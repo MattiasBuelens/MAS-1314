@@ -25,6 +25,10 @@ public class PacketInfo {
 	public ParcelState getState() {
 		return state;
 	}
+	
+	public boolean isPickingUp() {
+		return getState().isPickedUp() || getState() == ParcelState.PICKING_UP;
+	}
 
 	public Vehicle getDeliveringTruck() {
 		return deliveringTruck;
