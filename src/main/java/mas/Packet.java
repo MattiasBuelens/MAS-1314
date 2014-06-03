@@ -30,8 +30,8 @@ public class Packet extends BDIParcel implements CommunicationUser,
 	private final SimulationSettings settings;
 
 	// Beliefs
-	private Vehicle deliveringVehicle;
-	private long deliveryTime;
+	private Vehicle deliveringVehicle = null;
+	private long deliveryTime = Long.MAX_VALUE;
 
 	public Packet(Point pStartPosition, Point pDestination,
 			long pPickupDuration, TimeWindow pickupTW, long pDeliveryDuration,
