@@ -33,12 +33,14 @@ public class Packet extends BDIParcel implements CommunicationUser,
 	private Vehicle deliveringVehicle;
 	private long deliveryTime;
 
-	public Packet(Point pDestination, long pPickupDuration,
-			TimeWindow pickupTW, long pDeliveryDuration, TimeWindow deliveryTW,
-			double pMagnitude, SimulationSettings settings) {
+	public Packet(Point pStartPosition, Point pDestination,
+			long pPickupDuration, TimeWindow pickupTW, long pDeliveryDuration,
+			TimeWindow deliveryTW, double pMagnitude,
+			SimulationSettings settings) {
 		super(pDestination, pPickupDuration, pickupTW, pDeliveryDuration,
 				deliveryTW, pMagnitude);
 		this.settings = settings;
+		setStartPosition(pStartPosition);
 	}
 
 	protected Vehicle getDeliveringVehicle() {

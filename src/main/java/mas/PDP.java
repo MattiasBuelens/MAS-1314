@@ -9,6 +9,7 @@ import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
+import javax.measure.unit.Unit;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -17,6 +18,7 @@ import org.jscience.physics.amount.Amount;
 import rinde.sim.core.Simulator;
 import rinde.sim.core.graph.Graph;
 import rinde.sim.core.graph.MultiAttributeData;
+import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationModel;
 import rinde.sim.core.model.pdp.DefaultPDPModel;
 import rinde.sim.core.model.pdp.PDPModel;
@@ -29,6 +31,7 @@ import rinde.sim.ui.View;
 import rinde.sim.ui.renderers.GraphRoadModelRenderer;
 import rinde.sim.ui.renderers.RoadUserRenderer;
 import rinde.sim.ui.renderers.UiSchema;
+import rinde.sim.util.TimeWindow;
 
 public class PDP {
 
@@ -120,6 +123,35 @@ public class PDP {
 			sim.register(new Truck(roadModel.getRandomPosition(rnd), settings));
 		}
 
+		// add a number of packets on the road
+		sim.register(createPacket(
+				// Start
+				roadModel.getRandomPosition(rnd),
+				// Destination
+				roadModel.getRandomPosition(rnd),
+				// Pickup
+				Amount.valueOf(5d, NonSI.MINUTE),
+				Amount.valueOf(0d, NonSI.MINUTE),
+				Amount.valueOf(15d, NonSI.MINUTE),
+				// Delivery
+				Amount.valueOf(10d, NonSI.MINUTE),
+				Amount.valueOf(60d, NonSI.MINUTE),
+				Amount.valueOf(75d, NonSI.MINUTE), settings));
+
+		sim.register(createPacket(
+				// Start
+				roadModel.getRandomPosition(rnd),
+				// Destination
+				roadModel.getRandomPosition(rnd),
+				// Pickup
+				Amount.valueOf(10d, NonSI.MINUTE),
+				Amount.valueOf(20d, NonSI.MINUTE),
+				Amount.valueOf(40d, NonSI.MINUTE),
+				// Delivery
+				Amount.valueOf(5d, NonSI.MINUTE),
+				Amount.valueOf(90d, NonSI.MINUTE),
+				Amount.valueOf(120d, NonSI.MINUTE), settings));
+
 		final UiSchema uis = new UiSchema();
 		uis.add(Truck.class, "/graphics/perspective/empty-truck-32.png");
 		uis.add(Packet.class, "/graphics/perspective/deliverypackage.png");
@@ -139,6 +171,23 @@ public class PDP {
 		viewBuilder.show();
 		// in case a GUI is not desired, the simulation can simply be run by
 		// calling the start method of the simulator.
+	}
+
+	private static Packet createPacket(Point pStartPosition,
+			Point pDestination, Amount<Duration> pickupDuration,
+			Amount<Duration> pickupStart, Amount<Duration> pickupEnd,
+			Amount<Duration> deliveryDuration, Amount<Duration> deliveryStart,
+			Amount<Duration> deliveryEnd, SimulationSettings settings) {
+		final Unit<Duration> tickUnit = TICK_DURATION.getUnit();
+		long pPickupDuration = pickupDuration.longValue(tickUnit);
+		final TimeWindow pickupTW = new TimeWindow(
+				pickupStart.longValue(tickUnit), pickupEnd.longValue(tickUnit));
+		long pDeliveryDuration = deliveryDuration.longValue(tickUnit);
+		final TimeWindow deliveryTW = new TimeWindow(
+				deliveryStart.longValue(tickUnit),
+				deliveryEnd.longValue(tickUnit));
+		return new Packet(pStartPosition, pDestination, pPickupDuration,
+				pickupTW, pDeliveryDuration, deliveryTW, 1l, settings);
 	}
 
 	// load the graph file
