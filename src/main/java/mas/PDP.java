@@ -51,7 +51,7 @@ public class PDP {
 		// One meter on the map corresponds to meterFactor coordinate units
 		final double meterFactor = 10d;
 
-		Amount<Length> commRadius = Amount.valueOf(3d, SI.KILOMETER);
+		Amount<Length> commRadius = Amount.valueOf(2d, SI.KILOMETER);
 		// DIRTY FIX: CommunicationModel uses raw Point distances
 		// which do not correspond to actual distances on the map
 		commRadius = commRadius.times(meterFactor);
@@ -80,8 +80,8 @@ public class PDP {
 		// configuration (i.e. add new models) but we can start adding objects
 		sim.configure();
 
-		Experiment experiment = new Experiment(sim, 3, 10, settings,
-				Amount.valueOf(6, NonSI.HOUR));
+		Experiment experiment = new Experiment(sim, 15, 200, settings,
+				Amount.valueOf(10, NonSI.HOUR));
 		experiment.enableUI();
 		experiment.start();
 	}
