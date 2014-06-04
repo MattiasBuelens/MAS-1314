@@ -2,6 +2,7 @@ package mas;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import javax.measure.Measure;
 import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
@@ -12,6 +13,7 @@ import org.jscience.physics.amount.Amount;
 
 public class SimulationSettings {
 
+	private final Amount<Duration> tickDuration;
 	private final Amount<Velocity> truckSpeed;
 
 	private final Amount<Length> communicationRadius;
@@ -21,11 +23,23 @@ public class SimulationSettings {
 	private final Amount<Duration> truckReconsiderTimeout;
 
 	private SimulationSettings(Builder builder) {
+		this.tickDuration = checkNotNull(builder.tickDuration);
 		this.truckSpeed = checkNotNull(builder.truckSpeed);
 		this.communicationRadius = checkNotNull(builder.communicationRadius);
 		this.communicationReliability = builder.communicationReliability;
 		this.packetBroadcastPeriod = checkNotNull(builder.packetBroadcastPeriod);
 		this.truckReconsiderTimeout = checkNotNull(builder.truckReconsiderTimeout);
+	}
+
+	/**
+	 * Get the duration of a tick.
+	 */
+	public Amount<Duration> getTickDuration() {
+		return tickDuration;
+	}
+	
+	public Measure<Long, Duration> getTickMeasure() {
+		return Measure.valueOf(getTickDuration().getExactValue(), getTickDuration().getUnit());
 	}
 
 	/**
@@ -71,6 +85,8 @@ public class SimulationSettings {
 
 	public static class Builder {
 
+		private Amount<Duration> tickDuration = Amount.valueOf(1000l,
+				SI.MILLI(SI.SECOND));
 		private Amount<Velocity> truckSpeed = Amount.valueOf(50d,
 				NonSI.KILOMETRES_PER_HOUR);
 		private Amount<Length> communicationRadius = Amount.valueOf(1d,
@@ -82,6 +98,11 @@ public class SimulationSettings {
 				SI.SECOND);
 
 		protected Builder() {
+		}
+
+		public Builder setTickDuration(Amount<Duration> tick) {
+			this.tickDuration = tick;
+			return this;
 		}
 
 		public Builder setTruckSpeed(Amount<Velocity> speed) {

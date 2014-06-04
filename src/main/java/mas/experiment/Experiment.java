@@ -1,7 +1,9 @@
 package mas.experiment;
 
+import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Duration;
 import javax.measure.unit.NonSI;
+import javax.measure.unit.Unit;
 
 import mas.Packet;
 import mas.SimulationSettings;
@@ -55,13 +57,16 @@ public class Experiment implements TimedEventHandler {
 		this.nbPackets = nbPackets;
 		this.settings = settings;
 		this.duration = duration;
-		int nbTicks = (int) duration.longValue(sim.getTimeUnit());
+
+		Amount<Dimensionless> ticks = duration.divide(
+				settings.getTickDuration()).to(Unit.ONE);
+		int nbTicks = (int) ticks.longValue(Unit.ONE);
 
 		createTrucks();
 		scenario = buildScenario();
 		controller = new ScenarioController(scenario, sim, this, nbTicks);
 	}
-	
+
 	public void enableUI() {
 		controller.enableUI(new SimulatorUI());
 	}
@@ -156,7 +161,7 @@ public class Experiment implements TimedEventHandler {
 	private class TimedPacketEvent extends TimedEvent {
 
 		private static final long serialVersionUID = 1L;
-		
+
 		public final Packet packet;
 
 		public TimedPacketEvent(long timestamp, Packet packet) {

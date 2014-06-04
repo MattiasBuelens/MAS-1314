@@ -3,26 +3,21 @@ package mas;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import javax.measure.Measure;
 import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
 
 import mas.experiment.Experiment;
-import mas.ui.MessagingLayerRenderer;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.eclipse.swt.graphics.RGB;
 import org.jscience.physics.amount.Amount;
 
 import rinde.sim.core.Simulator;
 import rinde.sim.core.graph.Graph;
 import rinde.sim.core.graph.MultiAttributeData;
-import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationModel;
 import rinde.sim.core.model.pdp.DefaultPDPModel;
 import rinde.sim.core.model.pdp.PDPModel;
@@ -33,12 +28,6 @@ import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.examples.core.taxi.TaxiExample;
 import rinde.sim.serializers.DotGraphSerializer;
 import rinde.sim.serializers.SelfCycleFilter;
-import rinde.sim.ui.View;
-import rinde.sim.ui.renderers.GraphRoadModelRenderer;
-import rinde.sim.ui.renderers.PDPModelRenderer;
-import rinde.sim.ui.renderers.RoadUserRenderer;
-import rinde.sim.ui.renderers.UiSchema;
-import rinde.sim.util.TimeWindow;
 
 public class PDP {
 
@@ -102,10 +91,6 @@ public class PDP {
 		// 'experiment'
 		final RandomGenerator rnd = new MersenneTwister(123);
 
-		// initialize a new Simulator instance
-		final Simulator sim = new Simulator(rnd, Measure.valueOf(
-				TICK_DURATION.getExactValue(), TICK_DURATION.getUnit()));
-
 		// One meter on the map corresponds to meterFactor coordinate units
 		final double meterFactor = 10d;
 
@@ -115,11 +100,14 @@ public class PDP {
 				.times(meterFactor);
 
 		final SimulationSettings settings = SimulationSettings.builder()
-				.setTruckSpeed(VEHICLE_SPEED)
+				.setTickDuration(TICK_DURATION).setTruckSpeed(VEHICLE_SPEED)
 				.setCommunicationRadius(commRadius)
 				.setCommunicationReliability(COMMUNICATION_RELIABILITY)
 				.setPacketBroadcastPeriod(PACKET_BROADCAST_PERIOD)
 				.setTruckReconsiderTimeout(TRUCK_RECONSIDER_TIMEOUT).build();
+
+		// initialize a new Simulator instance
+		final Simulator sim = new Simulator(rnd, settings.getTickMeasure());
 
 		RoadModel roadModel = new GraphRoadModel(loadGraph(MAP_FILE),
 				SI.METER.times(meterFactor), NonSI.KILOMETERS_PER_HOUR);
