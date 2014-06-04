@@ -388,11 +388,13 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 			boolean allowWait) throws IllegalActionException {
 		// Move to packet position
 		plan = plan.nextAction(this, new MoveAction(packet.getPosition()));
-		// Wait for pickup begin time
-		if (allowWait) {
-			plan = plan.nextAction(this,
-					new WaitAction(packet.getPickupTimeWindow().begin));
+		if (!allowWait) {
+			// Try to pick up immediately, but don't use this plan
+			plan.nextAction(this, new PickupAction(packet));
 		}
+		// Wait for pickup begin time
+		plan = plan.nextAction(this,
+				new WaitAction(packet.getPickupTimeWindow().begin));
 		// Pick up
 		plan = plan.nextAction(this, new PickupAction(packet));
 		return plan;
@@ -402,11 +404,13 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 			boolean allowWait) throws IllegalActionException {
 		// Move to packet destination
 		plan = plan.nextAction(this, new MoveAction(packet.getDestination()));
-		// Wait for delivery begin time
-		if (allowWait) {
-			plan = plan.nextAction(this,
-					new WaitAction(packet.getDeliveryTimeWindow().begin));
+		if (!allowWait) {
+			// Try to deliver immediately, but don't use this plan
+			plan.nextAction(this, new DeliverAction(packet));
 		}
+		// Wait for delivery begin time
+		plan = plan.nextAction(this,
+				new WaitAction(packet.getDeliveryTimeWindow().begin));
 		// Deliver
 		plan = plan.nextAction(this, new DeliverAction(packet));
 		return plan;
