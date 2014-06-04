@@ -25,7 +25,8 @@ public class Plan {
 		return Collections.unmodifiableCollection(queue);
 	}
 
-	public boolean step(BDIVehicle target, TimeLapse time) throws ActionFailedException {
+	public boolean step(BDIVehicle target, TimeLapse time)
+			throws ActionFailedException {
 		Action step = queue.peek();
 		if (step != null) {
 			boolean stepDone = step.execute(target, time);

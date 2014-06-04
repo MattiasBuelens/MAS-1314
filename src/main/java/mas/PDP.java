@@ -11,6 +11,8 @@ import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
 import javax.measure.unit.Unit;
 
+import mas.ui.MessagingLayerRenderer;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.eclipse.swt.graphics.RGB;
@@ -23,6 +25,8 @@ import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationModel;
 import rinde.sim.core.model.pdp.DefaultPDPModel;
 import rinde.sim.core.model.pdp.PDPModel;
+import rinde.sim.core.model.pdp.twpolicy.TardyAllowedPolicy;
+import rinde.sim.core.model.pdp.twpolicy.TimeWindowPolicy;
 import rinde.sim.core.model.road.GraphRoadModel;
 import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.examples.core.taxi.TaxiExample;
@@ -30,6 +34,7 @@ import rinde.sim.serializers.DotGraphSerializer;
 import rinde.sim.serializers.SelfCycleFilter;
 import rinde.sim.ui.View;
 import rinde.sim.ui.renderers.GraphRoadModelRenderer;
+import rinde.sim.ui.renderers.PDPModelRenderer;
 import rinde.sim.ui.renderers.RoadUserRenderer;
 import rinde.sim.ui.renderers.UiSchema;
 import rinde.sim.util.TimeWindow;
@@ -52,6 +57,11 @@ public class PDP {
 	 * Communication reliability, between 0.0 and 1.0.
 	 */
 	private static final double COMMUNICATION_RELIABILITY = 0.75d;
+
+	/**
+	 * Time window policy.
+	 */
+	private static final TimeWindowPolicy POLICY = new TardyAllowedPolicy();
 
 	/**
 	 * Tick duration, in milliseconds.
@@ -112,7 +122,7 @@ public class PDP {
 
 		RoadModel roadModel = new GraphRoadModel(loadGraph(MAP_FILE),
 				SI.METER.times(meterFactor), NonSI.KILOMETERS_PER_HOUR);
-		PDPModel pdpModel = new DefaultPDPModel();
+		PDPModel pdpModel = new DefaultPDPModel(POLICY);
 		CommunicationModel commModel = new CommunicationModel(rnd);
 		sim.register(roadModel);
 		sim.register(pdpModel);
@@ -171,9 +181,8 @@ public class PDP {
 		// (indicating its boundaries), and the drivers are rendererd as red
 		// dots.
 		final View.Builder viewBuilder = View.create(sim).with(
-				new GraphRoadModelRenderer(),
-				new MessagingLayerRenderer(roadModel, uis),
-				new RoadUserRenderer(uis, false));
+				new GraphRoadModelRenderer(), new MessagingLayerRenderer(uis),
+				new RoadUserRenderer(uis, false), new PDPModelRenderer(true));
 
 		if (testing) {
 			viewBuilder.setSpeedUp(16).enableAutoClose().enableAutoPlay()
@@ -199,7 +208,7 @@ public class PDP {
 				deliveryStart.longValue(tickUnit),
 				deliveryEnd.longValue(tickUnit));
 		return new Packet(pStartPosition, pDestination, pPickupDuration,
-				pickupTW, pDeliveryDuration, deliveryTW, 0l, settings);
+				pickupTW, pDeliveryDuration, deliveryTW, 1d, settings);
 	}
 
 	// load the graph file

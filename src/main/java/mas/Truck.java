@@ -87,6 +87,7 @@ public class Truck extends BDIVehicle implements CommunicationUser,
 	public Truck(Point startPosition, SimulationSettings settings) {
 		this.settings = settings;
 		setStartPosition(startPosition);
+		setCapacity(Double.POSITIVE_INFINITY);
 	}
 
 	protected ImmutableSet<Packet> getContainedPackets() {

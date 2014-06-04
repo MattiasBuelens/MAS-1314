@@ -1,31 +1,33 @@
-package mas;
+package mas.ui;
 
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import mas.BDIParcel;
+import mas.BDIVehicle;
+
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 
 import rinde.sim.core.graph.Point;
+import rinde.sim.core.model.ModelProvider;
 import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.core.model.road.RoadUser;
-import rinde.sim.ui.renderers.CanvasRenderer;
+import rinde.sim.ui.renderers.ModelRenderer;
 import rinde.sim.ui.renderers.UiSchema;
 import rinde.sim.ui.renderers.ViewPort;
 import rinde.sim.ui.renderers.ViewRect;
 
-public class MessagingLayerRenderer implements CanvasRenderer {
+public class MessagingLayerRenderer implements ModelRenderer {
 
 	protected RoadModel rs;
-	protected boolean useEncirclement;
 	private final UiSchema uiSchema;
 
 	public static final String RADIUS_COLOR = "radius_color";
 
-	public MessagingLayerRenderer(RoadModel rs, UiSchema uiSchema) {
-		this.rs = rs;
+	public MessagingLayerRenderer(UiSchema uiSchema) {
 		this.uiSchema = uiSchema;
 	}
 
@@ -77,6 +79,11 @@ public class MessagingLayerRenderer implements CanvasRenderer {
 	@Override
 	public ViewRect getViewRect() {
 		return null;
+	}
+
+	@Override
+	public void registerModelProvider(ModelProvider mp) {
+		rs = mp.getModel(RoadModel.class);
 	}
 
 }
