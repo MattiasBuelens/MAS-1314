@@ -66,7 +66,7 @@ public class MessagingLayerRenderer implements ModelRenderer {
 		gc.setForeground(c);
 		gc.setBackground(c);
 
-		gc.setAlpha(50);
+		gc.setAlpha(25);
 		gc.fillOval(x - radius, y - radius, 2 * radius, 2 * radius);
 		gc.setAlpha(255);
 	}

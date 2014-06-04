@@ -11,6 +11,7 @@ import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
 import javax.measure.unit.Unit;
 
+import mas.experiment.Experiment;
 import mas.ui.MessagingLayerRenderer;
 
 import org.apache.commons.math3.random.MersenneTwister;
@@ -51,7 +52,7 @@ public class PDP {
 	 * Communication radius, in kilometers.
 	 */
 	private static final Amount<Length> COMMUNICATION_RADIUS = Amount.valueOf(
-			1d, SI.KILOMETER);
+			3d, SI.KILOMETER);
 
 	/**
 	 * Communication reliability, between 0.0 and 1.0.
@@ -132,83 +133,10 @@ public class PDP {
 		// configuration (i.e. add new models) but we can start adding objects
 		sim.configure();
 
-		// add a number of drivers on the road
-		final int numDrivers = 10;
-		for (int i = 0; i < numDrivers; i++) {
-			// when an object is registered in the simulator it gets
-			// automatically 'hooked up' with models that it's interested in. An
-			// object declares to be interested in an model by implementing an
-			// interface.
-			sim.register(new Truck(roadModel.getRandomPosition(rnd), settings));
-		}
-
-		// add a number of packets on the road
-		sim.register(createPacket(
-				// Start
-				roadModel.getRandomPosition(rnd),
-				// Destination
-				roadModel.getRandomPosition(rnd),
-				// Pickup
-				Amount.valueOf(5d, NonSI.MINUTE),
-				Amount.valueOf(0d, NonSI.MINUTE),
-				Amount.valueOf(15d, NonSI.MINUTE),
-				// Delivery
-				Amount.valueOf(10d, NonSI.MINUTE),
-				Amount.valueOf(60d, NonSI.MINUTE),
-				Amount.valueOf(75d, NonSI.MINUTE), settings));
-
-		sim.register(createPacket(
-				// Start
-				roadModel.getRandomPosition(rnd),
-				// Destination
-				roadModel.getRandomPosition(rnd),
-				// Pickup
-				Amount.valueOf(10d, NonSI.MINUTE),
-				Amount.valueOf(20d, NonSI.MINUTE),
-				Amount.valueOf(40d, NonSI.MINUTE),
-				// Delivery
-				Amount.valueOf(5d, NonSI.MINUTE),
-				Amount.valueOf(90d, NonSI.MINUTE),
-				Amount.valueOf(120d, NonSI.MINUTE), settings));
-
-		final UiSchema uis = new UiSchema();
-		uis.add(Truck.class, "/graphics/perspective/empty-truck-32.png");
-		uis.add(Packet.class, "/graphics/perspective/deliverypackage.png");
-		uis.add(MessagingLayerRenderer.RADIUS_COLOR, new RGB(0, 255, 0));
-
-		// initialize the GUI. We use separate renderers for the road model and
-		// for the drivers. By default the road model is rendererd as a square
-		// (indicating its boundaries), and the drivers are rendererd as red
-		// dots.
-		final View.Builder viewBuilder = View.create(sim).with(
-				new GraphRoadModelRenderer(), new MessagingLayerRenderer(uis),
-				new RoadUserRenderer(uis, false), new PDPModelRenderer(true));
-
-		if (testing) {
-			viewBuilder.setSpeedUp(16).enableAutoClose().enableAutoPlay()
-					.stopSimulatorAtTime(10 * 60 * 1000);
-		}
-
-		viewBuilder.show();
-		// in case a GUI is not desired, the simulation can simply be run by
-		// calling the start method of the simulator.
-	}
-
-	private static Packet createPacket(Point pStartPosition,
-			Point pDestination, Amount<Duration> pickupDuration,
-			Amount<Duration> pickupStart, Amount<Duration> pickupEnd,
-			Amount<Duration> deliveryDuration, Amount<Duration> deliveryStart,
-			Amount<Duration> deliveryEnd, SimulationSettings settings) {
-		final Unit<Duration> tickUnit = TICK_DURATION.getUnit();
-		long pPickupDuration = pickupDuration.longValue(tickUnit);
-		final TimeWindow pickupTW = new TimeWindow(
-				pickupStart.longValue(tickUnit), pickupEnd.longValue(tickUnit));
-		long pDeliveryDuration = deliveryDuration.longValue(tickUnit);
-		final TimeWindow deliveryTW = new TimeWindow(
-				deliveryStart.longValue(tickUnit),
-				deliveryEnd.longValue(tickUnit));
-		return new Packet(pStartPosition, pDestination, pPickupDuration,
-				pickupTW, pDeliveryDuration, deliveryTW, 1d, settings);
+		Experiment experiment = new Experiment(sim, 3, 10, settings,
+				Amount.valueOf(6, NonSI.HOUR));
+		experiment.enableUI();
+		experiment.start();
 	}
 
 	// load the graph file
