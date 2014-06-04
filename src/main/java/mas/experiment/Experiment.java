@@ -1,5 +1,8 @@
 package mas.experiment;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Duration;
 import javax.measure.unit.NonSI;
@@ -18,7 +21,9 @@ import rinde.sim.core.Simulator;
 import rinde.sim.core.Simulator.SimulatorEventType;
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.pdp.PDPModel;
+import rinde.sim.core.model.pdp.PDPModel.PDPModelEventType;
 import rinde.sim.core.model.pdp.PDPModel.ParcelState;
+import rinde.sim.core.model.pdp.PDPModelEvent;
 import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.event.Event;
@@ -46,6 +51,8 @@ public class Experiment implements TimedEventHandler, Listener {
 
 	private Scenario scenario;
 	private ScenarioController controller;
+
+	private Map<Parcel, Long> deliveredTimes = new HashMap<>();
 
 	private static final Amount<Duration> MAX_PICKUP_DELAY = Amount.valueOf(30,
 			NonSI.MINUTE);
@@ -81,6 +88,8 @@ public class Experiment implements TimedEventHandler, Listener {
 		controller = new ScenarioController(scenario, sim, this, nbTicks);
 
 		sim.getEventAPI().addListener(this, SimulatorEventType.STOPPED);
+		getPDPModel().getEventAPI().addListener(this,
+				PDPModelEventType.END_DELIVERY);
 	}
 
 	public void enableUI() {
@@ -133,20 +142,51 @@ public class Experiment implements TimedEventHandler, Listener {
 		sim.register(packet);
 	}
 
+	private void delivered(Parcel parcel, long deliveryTime) {
+		deliveredTimes.put(parcel, deliveryTime);
+	}
+
 	private void finished() {
 		PDPModel pdp = getPDPModel();
 		int deliveredParcels = 0;
 		int totalParcels = 0;
 
+		int timedDeliveries = 0;
+		int earlyDeliveries = 0;
+		int lateDeliveries = 0;
+
+		LOGGER.info("[[ Results ]]");
+		int i = 1;
 		for (Parcel parcel : pdp.getParcels(ParcelState.values())) {
 			ParcelState state = pdp.getParcelState(parcel);
 			totalParcels++;
-			if (state.isDelivered())
+			if (state.isDelivered()) {
 				deliveredParcels++;
+				long deliveryTime = deliveredTimes.get(parcel);
+				TimeWindow deliveryTW = parcel.getDeliveryTimeWindow();
+				LOGGER.info(String.format(
+						"%d. %s - delivered at %d (time window: %d to %d)", i,
+						parcel, deliveryTime, deliveryTW.begin, deliveryTW.end));
+				if (deliveryTW.isIn(deliveryTime)) {
+					timedDeliveries++;
+					LOGGER.info("   = on time");
+				} else if (deliveryTW.isBeforeStart(deliveryTime)) {
+					earlyDeliveries++;
+					LOGGER.info("   = too early");
+				} else {
+					lateDeliveries++;
+					LOGGER.info("   = too late");
+				}
+			} else {
+				LOGGER.info(String.format("%d. %s - not delivered", i, parcel));
+			}
+			i++;
 		}
-		LOGGER.info("[[ Results ]]");
-		LOGGER.info(String.format("%d / %d parcels delivered",
+		LOGGER.info(String.format("TOTAL: %d / %d parcels delivered",
 				deliveredParcels, totalParcels));
+		LOGGER.info(String.format(
+				"DELIVERIES: %d on time, %d too early, %d too late",
+				timedDeliveries, earlyDeliveries, lateDeliveries));
 	}
 
 	private long getRandom(long max) {
@@ -185,6 +225,9 @@ public class Experiment implements TimedEventHandler, Listener {
 	public void handleEvent(Event e) {
 		if (e.getEventType() == SimulatorEventType.STOPPED) {
 			finished();
+		} else if (e.getEventType() == PDPModelEventType.END_DELIVERY) {
+			PDPModelEvent event = (PDPModelEvent) e;
+			delivered(event.parcel, event.time);
 		}
 	}
 
