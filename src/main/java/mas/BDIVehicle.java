@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
+import javax.measure.unit.SI;
 import javax.measure.unit.Unit;
 
 import mas.action.ActionFailedException;
@@ -201,7 +202,8 @@ public abstract class BDIVehicle extends Vehicle implements CommunicationUser,
 
 	@Override
 	public final double getRadius() {
-		return getRadiusAmount().doubleValue(getRoadModel().getDistanceUnit());
+		// Return result in *internal* road model units
+		return getRadiusAmount().doubleValue(SI.METER);
 	}
 
 	public abstract Amount<Velocity> getSpeedAmount();

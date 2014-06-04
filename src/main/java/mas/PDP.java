@@ -13,6 +13,7 @@ import javax.measure.unit.Unit;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.eclipse.swt.graphics.RGB;
 import org.jscience.physics.amount.Amount;
 
 import rinde.sim.core.Simulator;
@@ -94,19 +95,25 @@ public class PDP {
 		final Simulator sim = new Simulator(rnd, Measure.valueOf(
 				TICK_DURATION.getExactValue(), TICK_DURATION.getUnit()));
 
+		// One meter on the map corresponds to meterFactor coordinate units
+		final double meterFactor = 10d;
+
+		// DIRTY FIX: CommunicationModel uses raw Point distances
+		// which do not correspond to actual distances on the map
+		final Amount<Length> commRadius = COMMUNICATION_RADIUS
+				.times(meterFactor);
+
 		final SimulationSettings settings = SimulationSettings.builder()
 				.setTruckSpeed(VEHICLE_SPEED)
-				.setCommunicationRadius(COMMUNICATION_RADIUS)
+				.setCommunicationRadius(commRadius)
 				.setCommunicationReliability(COMMUNICATION_RELIABILITY)
 				.setPacketBroadcastPeriod(PACKET_BROADCAST_PERIOD)
 				.setTruckReconsiderTimeout(TRUCK_RECONSIDER_TIMEOUT).build();
 
 		RoadModel roadModel = new GraphRoadModel(loadGraph(MAP_FILE),
-				SI.METER, SI.METERS_PER_SECOND);
+				SI.METER.times(meterFactor), NonSI.KILOMETERS_PER_HOUR);
 		PDPModel pdpModel = new DefaultPDPModel();
-		// FIXME CommunicationModel radius doesn't seem to work?!
-		// TODO Change true back to false when radiuses are fixed
-		CommunicationModel commModel = new CommunicationModel(rnd, true);
+		CommunicationModel commModel = new CommunicationModel(rnd);
 		sim.register(roadModel);
 		sim.register(pdpModel);
 		sim.register(commModel);
@@ -157,13 +164,16 @@ public class PDP {
 		final UiSchema uis = new UiSchema();
 		uis.add(Truck.class, "/graphics/perspective/empty-truck-32.png");
 		uis.add(Packet.class, "/graphics/perspective/deliverypackage.png");
+		uis.add(MessagingLayerRenderer.RADIUS_COLOR, new RGB(0, 255, 0));
 
 		// initialize the GUI. We use separate renderers for the road model and
 		// for the drivers. By default the road model is rendererd as a square
 		// (indicating its boundaries), and the drivers are rendererd as red
 		// dots.
 		final View.Builder viewBuilder = View.create(sim).with(
-				new GraphRoadModelRenderer(), new RoadUserRenderer(uis, false));
+				new GraphRoadModelRenderer(),
+				new MessagingLayerRenderer(roadModel, uis),
+				new RoadUserRenderer(uis, false));
 
 		if (testing) {
 			viewBuilder.setSpeedUp(16).enableAutoClose().enableAutoPlay()
