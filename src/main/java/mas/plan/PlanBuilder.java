@@ -1,4 +1,4 @@
-package mas;
+package mas.plan;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -6,6 +6,7 @@ import java.util.LinkedList;
 
 import javax.annotation.concurrent.Immutable;
 
+import mas.BDIVehicle;
 import mas.action.Action;
 import mas.action.IllegalActionException;
 import mas.action.SimulationState;

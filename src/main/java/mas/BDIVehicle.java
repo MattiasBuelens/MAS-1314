@@ -13,6 +13,7 @@ import javax.measure.unit.Unit;
 
 import mas.action.ActionFailedException;
 import mas.message.AbstractMessage;
+import mas.plan.Plan;
 import mas.timer.Timer;
 import mas.timer.TimerCallback;
 

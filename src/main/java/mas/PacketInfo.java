@@ -1,7 +1,7 @@
 package mas;
 
-import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.core.model.pdp.PDPModel.ParcelState;
+import rinde.sim.core.model.pdp.Vehicle;
 
 public class PacketInfo {
 

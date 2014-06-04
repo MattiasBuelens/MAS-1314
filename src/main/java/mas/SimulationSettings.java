@@ -37,9 +37,10 @@ public class SimulationSettings {
 	public Amount<Duration> getTickDuration() {
 		return tickDuration;
 	}
-	
+
 	public Measure<Long, Duration> getTickMeasure() {
-		return Measure.valueOf(getTickDuration().getExactValue(), getTickDuration().getUnit());
+		return Measure.valueOf(getTickDuration().getExactValue(),
+				getTickDuration().getUnit());
 	}
 
 	/**

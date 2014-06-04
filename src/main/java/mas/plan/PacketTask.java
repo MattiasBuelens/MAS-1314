@@ -1,6 +1,8 @@
-package mas;
+package mas.plan;
 
 import java.util.Comparator;
+
+import mas.Packet;
 
 import com.google.common.primitives.Doubles;
 

@@ -28,6 +28,9 @@ import mas.message.Proposal;
 import mas.message.Reminder;
 import mas.message.TruckMessage;
 import mas.message.TruckMessageVisitor;
+import mas.plan.PacketTask;
+import mas.plan.Plan;
+import mas.plan.PlanBuilder;
 
 import org.jscience.physics.amount.Amount;
 

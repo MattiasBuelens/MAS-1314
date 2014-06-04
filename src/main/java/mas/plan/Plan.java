@@ -1,10 +1,11 @@
-package mas;
+package mas.plan;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import mas.BDIVehicle;
 import mas.action.Action;
 import mas.action.ActionFailedException;
 import rinde.sim.core.TimeLapse;
