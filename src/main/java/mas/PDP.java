@@ -83,10 +83,10 @@ public class PDP {
 	 *            This is ignored.
 	 */
 	public static void main(String[] args) {
-		run(false);
+		run();
 	}
 
-	public static void run(boolean testing) {
+	public static void run() {
 		// initialize a random generator which we use throughout this
 		// 'experiment'
 		final RandomGenerator rnd = new MersenneTwister(123);

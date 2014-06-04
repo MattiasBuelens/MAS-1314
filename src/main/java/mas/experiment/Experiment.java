@@ -11,10 +11,18 @@ import mas.Truck;
 import mas.ui.SimulatorUI;
 
 import org.jscience.physics.amount.Amount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import rinde.sim.core.Simulator;
+import rinde.sim.core.Simulator.SimulatorEventType;
 import rinde.sim.core.graph.Point;
+import rinde.sim.core.model.pdp.PDPModel;
+import rinde.sim.core.model.pdp.PDPModel.ParcelState;
+import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.road.RoadModel;
+import rinde.sim.event.Event;
+import rinde.sim.event.Listener;
 import rinde.sim.scenario.Scenario;
 import rinde.sim.scenario.ScenarioBuilder;
 import rinde.sim.scenario.ScenarioController;
@@ -22,7 +30,13 @@ import rinde.sim.scenario.TimedEvent;
 import rinde.sim.scenario.TimedEventHandler;
 import rinde.sim.util.TimeWindow;
 
-public class Experiment implements TimedEventHandler {
+public class Experiment implements TimedEventHandler, Listener {
+
+	/**
+	 * Logger for this class.
+	 */
+	protected static final Logger LOGGER = LoggerFactory
+			.getLogger(Experiment.class);
 
 	private final Simulator sim;
 	private final int nbTrucks;
@@ -65,6 +79,8 @@ public class Experiment implements TimedEventHandler {
 		createTrucks();
 		scenario = buildScenario();
 		controller = new ScenarioController(scenario, sim, this, nbTicks);
+
+		sim.getEventAPI().addListener(this, SimulatorEventType.STOPPED);
 	}
 
 	public void enableUI() {
@@ -113,6 +129,26 @@ public class Experiment implements TimedEventHandler {
 		return builder.build();
 	}
 
+	private void addPacket(Packet packet) {
+		sim.register(packet);
+	}
+
+	private void finished() {
+		PDPModel pdp = getPDPModel();
+		int deliveredParcels = 0;
+		int totalParcels = 0;
+
+		for (Parcel parcel : pdp.getParcels(ParcelState.values())) {
+			ParcelState state = pdp.getParcelState(parcel);
+			totalParcels++;
+			if (state.isDelivered())
+				deliveredParcels++;
+		}
+		LOGGER.info("[[ Results ]]");
+		LOGGER.info(String.format("%d / %d parcels delivered",
+				deliveredParcels, totalParcels));
+	}
+
 	private long getRandom(long max) {
 		return (long) (sim.getRandomGenerator().nextDouble() * max);
 	}
@@ -137,12 +173,19 @@ public class Experiment implements TimedEventHandler {
 		return getRoadModel().getRandomPosition(sim.getRandomGenerator());
 	}
 
+	protected PDPModel getPDPModel() {
+		return sim.getModelProvider().getModel(PDPModel.class);
+	}
+
 	protected RoadModel getRoadModel() {
 		return sim.getModelProvider().getModel(RoadModel.class);
 	}
 
-	private void addPacket(Packet packet) {
-		sim.register(packet);
+	@Override
+	public void handleEvent(Event e) {
+		if (e.getEventType() == SimulatorEventType.STOPPED) {
+			finished();
+		}
 	}
 
 	@Override
