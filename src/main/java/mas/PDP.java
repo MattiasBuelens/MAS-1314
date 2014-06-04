@@ -3,9 +3,7 @@ package mas;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
-import javax.measure.quantity.Velocity;
 import javax.measure.unit.NonSI;
 import javax.measure.unit.SI;
 
@@ -22,7 +20,6 @@ import rinde.sim.core.model.communication.CommunicationModel;
 import rinde.sim.core.model.pdp.DefaultPDPModel;
 import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.pdp.twpolicy.TardyAllowedPolicy;
-import rinde.sim.core.model.pdp.twpolicy.TimeWindowPolicy;
 import rinde.sim.core.model.road.GraphRoadModel;
 import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.examples.core.taxi.TaxiExample;
@@ -30,46 +27,6 @@ import rinde.sim.serializers.DotGraphSerializer;
 import rinde.sim.serializers.SelfCycleFilter;
 
 public class PDP {
-
-	/**
-	 * Speed, in kilometers per hour.
-	 */
-	private static final Amount<Velocity> VEHICLE_SPEED = Amount.valueOf(50d,
-			NonSI.KILOMETERS_PER_HOUR);
-
-	/**
-	 * Communication radius, in kilometers.
-	 */
-	private static final Amount<Length> COMMUNICATION_RADIUS = Amount.valueOf(
-			3d, SI.KILOMETER);
-
-	/**
-	 * Communication reliability, between 0.0 and 1.0.
-	 */
-	private static final double COMMUNICATION_RELIABILITY = 0.75d;
-
-	/**
-	 * Time window policy.
-	 */
-	private static final TimeWindowPolicy POLICY = new TardyAllowedPolicy();
-
-	/**
-	 * Tick duration, in milliseconds.
-	 */
-	private static final Amount<Duration> TICK_DURATION = Amount.valueOf(1000l,
-			SI.MILLI(SI.SECOND));
-
-	/**
-	 * Packet broadcast period, in seconds.
-	 */
-	private static final Amount<Duration> PACKET_BROADCAST_PERIOD = Amount
-			.valueOf(30l, SI.SECOND);
-
-	/**
-	 * Truck reconsider delay, in seconds.
-	 */
-	private static final Amount<Duration> TRUCK_RECONSIDER_TIMEOUT = Amount
-			.valueOf(5l, NonSI.MINUTE);
 
 	private static final String MAP_FILE = "/data/maps/leuven-simple.dot";
 
@@ -94,24 +51,26 @@ public class PDP {
 		// One meter on the map corresponds to meterFactor coordinate units
 		final double meterFactor = 10d;
 
+		Amount<Length> commRadius = Amount.valueOf(3d, SI.KILOMETER);
 		// DIRTY FIX: CommunicationModel uses raw Point distances
 		// which do not correspond to actual distances on the map
-		final Amount<Length> commRadius = COMMUNICATION_RADIUS
-				.times(meterFactor);
+		commRadius = commRadius.times(meterFactor);
 
 		final SimulationSettings settings = SimulationSettings.builder()
-				.setTickDuration(TICK_DURATION).setTruckSpeed(VEHICLE_SPEED)
+				.setTickDuration(Amount.valueOf(1000l, SI.MILLI(SI.SECOND)))
+				.setTruckSpeed(Amount.valueOf(50d, NonSI.KILOMETERS_PER_HOUR))
 				.setCommunicationRadius(commRadius)
-				.setCommunicationReliability(COMMUNICATION_RELIABILITY)
-				.setPacketBroadcastPeriod(PACKET_BROADCAST_PERIOD)
-				.setTruckReconsiderTimeout(TRUCK_RECONSIDER_TIMEOUT).build();
+				.setCommunicationReliability(0.75d)
+				.setPacketBroadcastPeriod(Amount.valueOf(30l, SI.SECOND))
+				.setTruckReconsiderTimeout(Amount.valueOf(5l, NonSI.MINUTE))
+				.build();
 
 		// initialize a new Simulator instance
 		final Simulator sim = new Simulator(rnd, settings.getTickMeasure());
 
 		RoadModel roadModel = new GraphRoadModel(loadGraph(MAP_FILE),
 				SI.METER.times(meterFactor), NonSI.KILOMETERS_PER_HOUR);
-		PDPModel pdpModel = new DefaultPDPModel(POLICY);
+		PDPModel pdpModel = new DefaultPDPModel(new TardyAllowedPolicy());
 		CommunicationModel commModel = new CommunicationModel(rnd);
 		sim.register(roadModel);
 		sim.register(pdpModel);
