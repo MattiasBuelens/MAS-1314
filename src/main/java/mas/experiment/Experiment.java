@@ -59,13 +59,13 @@ public class Experiment implements TimedEventHandler, Listener {
 	private static final Amount<Duration> MAX_PICKUP_SPAN = Amount.valueOf(30,
 			NonSI.MINUTE);
 	private static final Amount<Duration> MAX_PICKUP_DURATION = Amount.valueOf(
-			10, NonSI.MINUTE);
+			2, NonSI.MINUTE);
 	private static final Amount<Duration> MAX_DELIVERY_DELAY = Amount.valueOf(
 			90, NonSI.MINUTE);
 	private static final Amount<Duration> MAX_DELIVERY_SPAN = Amount.valueOf(
 			30, NonSI.MINUTE);
 	private static final Amount<Duration> MAX_DELIVERY_DURATION = Amount
-			.valueOf(10, NonSI.MINUTE);
+			.valueOf(2, NonSI.MINUTE);
 
 	private static final Amount<Duration> MAX_PACKET_TIME = MAX_PICKUP_DELAY
 			.plus(MAX_PICKUP_SPAN).plus(MAX_DELIVERY_DELAY)
